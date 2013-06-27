@@ -19,5 +19,27 @@ import util.parsing.combinator.{JavaTokenParsers, ImplicitConversions, RegexPars
     You should have received a copy of the GNU General Public License
     along with Lamdheal.  If not, see <http://www.gnu.org/licenses/>.*/
 object LamdhealParser extends RegexParsers with ImplicitConversions with JavaTokenParsers {
-   
+   def parse(text: String): Expr = {
+      val u = parseAll(program, texto)
+      var line = 0
+      u match {
+         case Success(t, next) => {
+            if (!web) u.get.l map {
+               x =>
+                  if (x != EmptyExpr) println(line + ": " + x.dressed_string)
+                  line += 1
+            }
+            u.get
+         }
+         case f => {
+            val location = f.toString.split(": ").head.split('.').head.tail
+            val error = "at line " + location + ": " + f.toString.split(": ").last
+            var str = error
+            if (error.contains("expected but `\"' found")) str += "\nHint: strings, like in Java, have strict rules around the characters '\\' and, obviously, " +
+               "'\"'. '\\' normally is followed by one of the characters: 't', 'n', '\"', '\\' and 'r'; or it can end in strange parsing errors."
+            throw new ParserException(str)
+         }
+      }
+   }
+
 }
