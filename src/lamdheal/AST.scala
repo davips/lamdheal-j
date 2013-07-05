@@ -1,8 +1,9 @@
 package lamdheal
 
+import lamdheal.TypeSystem.Type
+
 /*  Copyright 2013 Davi Pereira dos Santos
     This file is part of Lamdheal.
-    Initially written according to the guidelines in the Masterarbeit of Eugen Labun.
 
     Lamdheal is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,51 +17,52 @@ package lamdheal
 
     You should have received a copy of the GNU General Public License
     along with Lamdheal.  If not, see <http://www.gnu.org/licenses/>.*/
-object ASTtypes {
 
-   sealed abstract class ExprType {
+
+sealed abstract class Expr
+
+case class LambdaE(v: String, body: Expr) extends Expr
+
+case class IdentE(name: String) extends Expr
+
+case class ApplyE(fn: Expr, arg: Expr) extends Expr
+
+case class LetE(v: String, defn: Expr, body: Expr) extends Expr
+
+case class AssignE(v: String, expr: Expr) extends Expr
+
+case class LetrecE(v: String, defn: Expr, body: Expr) extends Expr
+
+case class NumberE(n: String) extends Expr
+case class BooleanE(b: String) extends Expr
+
+case class CharE(c: Char) extends Expr
+
+case class ListE(l: Array[Expr]) extends Expr
+case class BlockE(l: Array[Expr]) extends Expr
+
+case class TypeE(t: Type) extends Expr
+case object EmptyE extends Expr
+
+object Expr {
+   def string(ast: Expr): String = {
+      if (ast.isInstanceOf[IdentE])
+         nakedString(ast)
+      else
+         nakedString(ast)
    }
 
-   case object EmptyT extends ExprType {
-      override def toString = "'Ø'" //'empty'"
+   def nakedString(ast: Expr): String = ast match {
+      case i: IdentE => i.name
+      case l: LambdaE => "fn " + l.v + " ⇒ " + string(l.body)
+      case f: ApplyE => string(f.fn) + " " + string(f.arg)
+      case l: LetE => "let " + l.v + " = " + string(l.defn) + " in " + string(l.body)
+      case l: LetrecE => "letrec " + l.v + " = " + string(l.defn) + " in " + string(l.body)
+      case l: AssignE => l.v + " = " + string(l.expr)
+      case NumberE(n) => n
+      case CharE(c) => c.toString
+      case ListE(l) => '[' + l.map(nakedString).mkString(", ") + ']'
+      case BlockE(l) => "(" + l.map(nakedString).mkString(", ") + ')'
+      case EmptyE => "Ø"
    }
-
-   case object BooleanT extends ExprType {
-      override def toString = "'boolean'"
-   }
-
-   case object NumberT extends ExprType {
-      override def toString = "'number'"
-   }
-
-   case object CharacterT extends ExprType {
-      override def toString = "'character'"
-   }
-
-   case class ListT(elements_type: ExprType) extends ExprType {
-      override def toString = "'list of " + elements_type + "'"
-   }
-
-   case class FunctionT(from: ExprType, to: ExprType) extends ExprType {
-      override def toString = "'" + from + " -> " + to + "'"
-   }
-
-//   case class Variable(id: Int) extends ExprType {
-//      var instance: Option[ExprType] = None
-//      lazy val name = HindleyDamasMilner.nextUniqueName
-//   }
-
-}
-
-object AST {
-   import lamdheal.ASTtypes._
-
-   sealed abstract class Expr {
-      def dressed_string = toString
-
-      var t: ExprType = null
-      //      var x = 0
-      //      var y = 0
-   }
-
 }
