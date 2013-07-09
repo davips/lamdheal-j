@@ -1,6 +1,7 @@
 package lamdheal
 
 import java.io.StringReader
+
 import org.codehaus.janino.SimpleCompiler
 
 //import org.codehaus.commons.compiler.jdk.SimpleCompiler
@@ -28,11 +29,13 @@ object Compiling {
    def return_type(t: Type): String = t match {
       case NumberT => "double"
       case EmptyT => "Object"
+      case ListT(et) => "ArrayList"
       case v@VariableT(i) => return_type(v.instance.get) //case None ??
    }
 
+   //   var var_counter=0
    def run(ex: Expr): String = {
-        ex match {
+      ex match {
          case EmptyE => ""
          //         case la@LambdaE(param, BlockE(l)) =>
          //            val from_type = la.t.asInstanceOf[FunctionT].from match {
@@ -56,17 +59,18 @@ object Compiling {
                   "} }.f()\n"
             } else "new Empty()"
          //
-         //         case Assign(id, expr) =>
-         //            var_counter += 1
-         //            val tranlated_id = id + var_counter.toString
-         //            translation += (id -> tranlated_id)
-         //            //               println(expr + " before match")
-         //            expr.t match {
-         //               case NumberT => "final double[] " + tranlated_id + " = {" + run(expr) + "};\n"
-         //               case ListT(CharacterT) => "final String " + tranlated_id + " = " + run(expr) + ";\n"
-         //               case ListT(_) => "final ArrayList " + tranlated_id + " = " + run(expr) + ";\n"
-         //            }
+         case AssignE(id, expr) =>
+            //                     var_counter += 1
+            //                     val tranlated_id = id + var_counter.toString
+            //                     translation += (id -> tranlated_id)
+            //               println(expr + " before match")
+            expr.t match {
+               case NumberT => "final double[] " + id + " = {" + run(expr) + "};\n"
+               case ListT(CharT) => "final String " + id + " = " + run(expr) + ";\n"
+               case ListT(_) => "final ArrayList " + id + " = " + run(expr) + ";\n"
+            }
          case c: CharE => "'" + c.toString + "'"
+         case NumberE(n) => n
          case ApplyE(f, a) => (f, a) match {
             //                     case (ShowE, x) => x + ".toString()"
             case (TypeE(t), ListE(l)) =>
@@ -86,7 +90,14 @@ object Compiling {
          //         case PrintLnE => "System.out.println"
          //         case Ident(name) => translation(name)
          //         case NumberExpr(n) => n.toString
-         case ListE(l) => "Arrays.asList(" + l.map(run).mkString(", ") + ")"
+         case li@ListE(l) => //"Arrays.asList(" + l.map(run).mkString(", ") + ")"
+            "new Anon() { public " + return_type(li.t) + " f() {\n" +
+               "      ArrayList al = new ArrayList();\n" +
+               l.map(x => "      al.add(" + run(x) + ");\n").mkString +
+               "      return al;\n" +
+               "} }.f()\n"
+
+
          //         case ListInterval(i, f) => "range(" + run(i) + "," + run(f) + ")"
       }
    }
@@ -94,12 +105,12 @@ object Compiling {
    def compile(expr: Expr) {
       val source = "import java.util.ArrayList;\n" +
          "import java.util.Iterator;\n" +
-         "class Empty {\n" +
-         "   String toString() {" +
+         "public class Empty {\n" +
+         "   public String toString() {" +
          "      return \"Ø\";\n" +
          "   }" +
          "}\n" +
-         "interface Anon {\n" +
+         "public interface Anon {\n" +
          "}\n" +
          "public class RuntimeMain implements Runnable {\n" +
          "   public static void main(String[] args) {\n" +

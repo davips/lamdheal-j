@@ -24,8 +24,8 @@ import lamdheal.TypeSystem.{Context, Type}
 object Main extends App {
    Console.setOut(new java.io.PrintStream(Console.out, true, "utf-8"))
    if (args.length != 1) {
-      println("Usage:\njava -jar lamdheal.jar input-file.java")
-      val source_code = Source.fromFile("example.java").getLines().mkString("\n")
+      println("Usage:\njava -jar lamdheal.jar input-file.lhe")
+      val source_code = Source.fromFile("example.lhe").getLines().mkString("\n")
       val ast = Parsing.parse(source_code)
       HindleyMilner.verify(ast) //AST is changed after type inference.
       Compiling.compile(ast)
