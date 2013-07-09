@@ -1,3 +1,6 @@
 /*
-//*/System.out.println("Hello, World");/*
+a=[1,2,3]
+//a = 'num' */3*7/*end
+
+0
 */

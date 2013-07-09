@@ -23,15 +23,12 @@ import lamdheal.TypeSystem.{Context, Type}
 
 object Main extends App {
    Console.setOut(new java.io.PrintStream(Console.out, true, "utf-8"))
-   val myenv = Map() ++ Array(
-      "true" -> TypeSystem.BooleanT,
-      "false" -> TypeSystem.BooleanT
-   )
    if (args.length != 1) {
       println("Usage:\njava -jar lamdheal.jar input-file.java")
       val source_code = Source.fromFile("example.java").getLines().mkString("\n")
-      val ast = LamdhealParser.parse(source_code)
-      val typed_ast = HindleyMilner.tryexp(new Context(myenv), ast)
+      val ast = Parsing.parse(source_code)
+      HindleyMilner.verify(ast) //AST is changed after type inference.
+      Compiling.compile(ast)
    }
    else {
       val source_code = Source.fromFile(args(0)).getLines().mkString("\n")

@@ -19,7 +19,9 @@ import lamdheal.TypeSystem.Type
     along with Lamdheal.  If not, see <http://www.gnu.org/licenses/>.*/
 
 
-sealed abstract class Expr
+sealed abstract class Expr {
+   var t: Type = null
+}
 
 case class LambdaE(v: String, body: Expr) extends Expr
 
@@ -27,42 +29,48 @@ case class IdentE(name: String) extends Expr
 
 case class ApplyE(fn: Expr, arg: Expr) extends Expr
 
-case class LetE(v: String, defn: Expr, body: Expr) extends Expr
+//case class LetE(v: String, defn: Expr, body: Expr) extends Expr
 
 case class AssignE(v: String, expr: Expr) extends Expr
 
-case class LetrecE(v: String, defn: Expr, body: Expr) extends Expr
+//case class LetrecE(v: String, defn: Expr, body: Expr) extends Expr
 
 case class NumberE(n: String) extends Expr
+
 case class BooleanE(b: String) extends Expr
 
 case class CharE(c: Char) extends Expr
 
 case class ListE(l: Array[Expr]) extends Expr
+
 case class BlockE(l: Array[Expr]) extends Expr
 
-case class TypeE(t: Type) extends Expr
+case class TypeE(ty: Type) extends Expr {
+   t = ty
+}
+
 case object EmptyE extends Expr
 
 object Expr {
-   def string(ast: Expr): String = {
-      if (ast.isInstanceOf[IdentE])
-         nakedString(ast)
-      else
-         nakedString(ast)
-   }
-
-   def nakedString(ast: Expr): String = ast match {
-      case i: IdentE => i.name
-      case l: LambdaE => "fn " + l.v + " ⇒ " + string(l.body)
-      case f: ApplyE => string(f.fn) + " " + string(f.arg)
-      case l: LetE => "let " + l.v + " = " + string(l.defn) + " in " + string(l.body)
-      case l: LetrecE => "letrec " + l.v + " = " + string(l.defn) + " in " + string(l.body)
-      case l: AssignE => l.v + " = " + string(l.expr)
-      case NumberE(n) => n
-      case CharE(c) => c.toString
-      case ListE(l) => '[' + l.map(nakedString).mkString(", ") + ']'
-      case BlockE(l) => "(" + l.map(nakedString).mkString(", ") + ')'
-      case EmptyE => "Ø"
-   }
+//   def string(ast: Expr): String = {
+//      if (ast.isInstanceOf[IdentE])
+//         nakedString(ast)
+//      else
+//         nakedString(ast)
+//   }
+//
+//   def nakedString(ast: Expr): String = ast match {
+//      case i: IdentE => i.name
+//      case l: LambdaE => "fn " + l.v + " ⇒ " + string(l.body)
+//      case f: ApplyE => string(f.fn) + " " + string(f.arg)
+//      //      case l: LetE => "let " + l.v + " = " + string(l.defn) + " in " + string(l.body)
+//      //      case l: LetrecE => "letrec " + l.v + " = " + string(l.defn) + " in " + string(l.body)
+//      case l: AssignE => l.v + " = " + string(l.expr)
+//      case NumberE(n) => n
+//      case CharE(c) => c.toString
+//      case ListE(l) => '[' + l.map(nakedString).mkString(", ") + ']'
+//      case BlockE(l) => "(" + l.map(nakedString).mkString(", ") + ')'
+//      case EmptyE => "Ø"
+//      case TypeE(t) =>"'"+t.name+"'"
+//   }
 }
