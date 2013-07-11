@@ -36,6 +36,51 @@ object Compiling {
    //   var var_counter=0
    def run(ex: Expr): String = {
       ex match {
+         case ApplyE(f, a) => (f, a) match {
+            //                     case (ShowE, x) => x + ".toString()"
+            case (TypeE(t), ListE(l)) =>
+               val java_lines = l.map(_.asInstanceOf[CharE].c).mkString.split("\n")
+               val code = if (t == EmptyT) {
+                  java_lines.mkString(";\n") + "return new Empty();"
+               } else {
+                  java_lines.dropRight(1).mkString(";\n") + "return " + java_lines.last + ";\n"
+               }
+               "new Anon() { public Object f(Object obj) {\n" +
+                  code + "\n" +
+                  "} }.f(null)\n"
+//               "new Anon() { public " + return_type(t) + " f() {\n" +
+//                  code + "\n" +
+//                  "} }.f()\n"
+            case (x, y) => (x.t, y.t) match {
+               case (ListT(elt), yt) => "built_in_function_map(" + run(x) + "," + run(y) + ")"
+               case (xt, yt) => run(x) + "(" + run(y) + ")"
+            }
+
+         }
+         case AssignE(id, expr) =>
+            //                     var_counter += 1
+            //                     val tranlated_id = id + var_counter.toString
+            //                     translation += (id -> tranlated_id)
+            //               println(expr + " before match")
+            expr.t match {
+               case NumberT => "final Double " + id + " = " + run(expr) + ";\n"
+               case ListT(CharT) => "final String " + id + " = " + run(expr) + ";\n"
+               case ListT(_) => "final ArrayList " + id + " = " + run(expr) + ";\n"
+            }
+         case c: CharE => "'" + c.toString + "'"
+         case b@BlockE(l) =>
+            val statements = l.filterNot(EmptyE ==).map(run).map("   " +)
+            if (statements.length > 0) {
+               "new Anon() { public Object f(Object obj) {\n" +
+                  statements.dropRight(1).mkString(";\n") + ";\n" +
+                  "return " + (if (return_type(b.t) != "void") statements.last + ";" else " new Empty();") + "\n" +
+                  "} } "
+//               "new Anon() { public " + return_type(b.t) + " f() {\n" +
+//                  statements.dropRight(1).mkString(";\n") + ";\n" +
+//                  "return " + (if (return_type(b.t) != "void") statements.last + ";" else " new Empty();") + "\n" +
+//                  "} } "
+            } else "new Empty()"
+         //
          case EmptyE => ""
          //         case la@LambdaE(param, BlockE(l)) =>
          //            val from_type = la.t.asInstanceOf[FunctionT].from match {
@@ -49,56 +94,25 @@ object Compiling {
          //            "new Anon() { public " + to_type + " f(" + from_type + " " + param + ") {\n" +
          //               l.filterNot(EmptyExpr ==).map(run).map("   " +).mkString(";\n") +
          //               "};\n"
-
-         case b@BlockE(l) =>
-            val statements = l.filterNot(EmptyE ==).map(run).map("   " +)
-            if (statements.length > 0) {
-               "new Anon() { public " + return_type(b.t) + " f() {\n" +
-                  statements.dropRight(1).mkString(";\n") + ";\n" +
-                  "return " + (if (return_type(b.t) != "void") statements.last + ";" else " new Empty();") + "\n" +
-                  "} }.f()\n"
-            } else "new Empty()"
-         //
-         case AssignE(id, expr) =>
-            //                     var_counter += 1
-            //                     val tranlated_id = id + var_counter.toString
-            //                     translation += (id -> tranlated_id)
-            //               println(expr + " before match")
-            expr.t match {
-               case NumberT => "final double[] " + id + " = {" + run(expr) + "};\n"
-               case ListT(CharT) => "final String " + id + " = " + run(expr) + ";\n"
-               case ListT(_) => "final ArrayList " + id + " = " + run(expr) + ";\n"
-            }
-         case c: CharE => "'" + c.toString + "'"
          case NumberE(n) => n
-         case ApplyE(f, a) => (f, a) match {
-            //                     case (ShowE, x) => x + ".toString()"
-            case (TypeE(t), ListE(l)) =>
-               val java_lines = l.map(_.asInstanceOf[CharE].c).mkString.split("\n")
-               val code = if (t == EmptyT) {
-                  java_lines.mkString(";\n") + "return new Empty();"
-               } else {
-                  java_lines.dropRight(1).mkString(";\n") + "return " + java_lines.last + ";\n"
-               }
-               "new Anon() { public " + return_type(t) + " f() {\n" +
-                  code + "\n" +
-                  "} }.f()\n"
-
-            case (y, x) => run(y) + "(" + run(x) + ")"
-
-         }
          //         case PrintLnE => "System.out.println"
-         //         case Ident(name) => translation(name)
+         case IdentE(name) => name
          //         case NumberExpr(n) => n.toString
-         case li@ListE(l) => //"Arrays.asList(" + l.map(run).mkString(", ") + ")"
-            "new Anon() { public " + return_type(li.t) + " f() {\n" +
+//         case li@ListE(l) =>
+//            "new Anon() { public " + return_type(li.t) + " f() {\n" +
+//               "      ArrayList al = new ArrayList();\n" +
+//               l.map(x => "      al.add(" + run(x) + ");\n").mkString +
+//               "      return al;\n" +
+//               "} } "
+         case li@ListE(l) =>
+            "new Anon() { public Object f(Object obj) {\n" +
                "      ArrayList al = new ArrayList();\n" +
                l.map(x => "      al.add(" + run(x) + ");\n").mkString +
                "      return al;\n" +
-               "} }.f()\n"
+               "} } "
 
 
-         //         case ListInterval(i, f) => "range(" + run(i) + "," + run(f) + ")"
+         //         case ListInterval(i, f) => "built_in_function_range(" + run(i) + "," + run(f) + ")"
       }
    }
 
@@ -111,6 +125,7 @@ object Compiling {
          "   }" +
          "}\n" +
          "public interface Anon {\n" +
+         "   Object f(Object o);" +
          "}\n" +
          "public class RuntimeMain implements Runnable {\n" +
          "   public static void main(String[] args) {\n" +
@@ -118,11 +133,18 @@ object Compiling {
          "      m.run();\n" +
          "   }\n" +
          "    \n" +
-         "   public ArrayList range(Double i, Double f) {\n" +
+         "   public ArrayList built_in_function_range(Double i, Double f) {\n" +
          "      ArrayList al = new ArrayList();\n" +
          "      for (Double x=i; x<=f; x++)\n" +
          "         al.add(x);\n" +
          "      return al;\n" +
+         "   }\n" +
+         "    \n" +
+         "   public ArrayList built_in_function_map(ArrayList al, Anon A) {\n" +
+         "      ArrayList al2 = new ArrayList();\n" +
+         "      for (int x=0; x<al.size(); x++)\n" +
+         "         al2.add(A.f(al.get(x)));\n" +
+         "      return al2;\n" +
          "   }\n" +
          "    \n" +
          "   public void run() {\n" +

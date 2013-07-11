@@ -214,6 +214,7 @@ object TypeSystem {
             case ListT(arg) =>
                ListT(freshrec(arg))
             case CharT => CharT
+            case NumberT => NumberT
          }
       }
       freshrec(t)
