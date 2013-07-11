@@ -45,17 +45,13 @@ object Compiling {
                } else {
                   java_lines.dropRight(1).mkString(";\n") + "return " + java_lines.last + ";\n"
                }
-               "new Anon() { public Object f(Object obj) {\n" +
+               "new Anon() { public Node f(Node obj) {\n" +
                   code + "\n" +
                   "} }.f(null)\n"
 //               "new Anon() { public " + return_type(t) + " f() {\n" +
 //                  code + "\n" +
 //                  "} }.f()\n"
-            case (x, y) => (x.t, y.t) match {
-               case (ListT(elt), yt) => "built_in_function_map(" + run(x) + "," + run(y) + ")"
-               case (xt, yt) => run(x) + "(" + run(y) + ")"
-            }
-
+            case (x, y) => "Runtime.apply(" + run(x) + ", " + run(y) + ")"
          }
          case AssignE(id, expr) =>
             //                     var_counter += 1

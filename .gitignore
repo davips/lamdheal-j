@@ -13,3 +13,7 @@ project/plugins/project/
 .scala_dependencies
 .idea/workspace.xml
 .idea/status.xml
+
+# NetBeans specific
+funcJava/nbproject/private/
+funcJava/build/
