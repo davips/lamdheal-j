@@ -2,10 +2,6 @@ package funcjava;
 
 import java.util.ArrayList;
 
-/**
- *
- * @author davi
- */
 public class Runtime {
 
     public static Node apply(Node f, Node n) {

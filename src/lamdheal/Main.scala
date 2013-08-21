@@ -29,8 +29,7 @@ object Main extends App {
       val ast = Parsing.parse(source_code)
       HindleyMilner.verify(ast) //AST is changed after type inference.
       Compiling.compile(ast)
-   }
-   else {
+   } else {
       val source_code = Source.fromFile(args(0)).getLines().mkString("\n")
    }
 }

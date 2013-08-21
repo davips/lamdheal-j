@@ -30,7 +30,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
       u match {
          case Success(t, next) => {
             val ug = u.get
-            ug.l map println
+//            ug.l map println
             ug
          }
          case f => {
@@ -70,7 +70,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
          }
    }
 
-   def sum = product ~ rep((not("`") ~> "+" ~ product | "-" ~ product)) ^^ {
+   def sum = product ~ rep(not("`") ~> "+" ~ product | "-" ~ product) ^^ {
       case number ~ list =>
          (number /: list) {
             case (acc, op ~ nextNum) => ApplyE(ApplyE(IdentE("(" + op + ")"), acc), nextNum)
@@ -147,8 +147,8 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
 
    def atomic_expr: Parser[Expr] = {
       (
-         //            "<<" ^^^ Show
-         identifier ^^ {x => IdentE(x)}
+         "<<" ^^^ IdentE("<<")
+            | identifier ^^ {x => IdentE(x)}
             | java_code
             | "(" ~> block <~ ")"
             //            | "[" ~> (sum(h) <~ "..") ~! sum(h) <~ "]" ^^ ListInterval
@@ -161,7 +161,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
             //            | shell(h)
             //            | arg
             //            | empty
-            //            | "`" ^^^ PrintLnE | "`+" ^^^ PrintE
+            | "`" ^^^ IdentE("`") | "`+" ^^^ IdentE("`+")
             //            | "@" ^^^ Takehead | "~" ^^^ Taketail | "!" ^^^ Reverse
             //            | ("\'" | "‘") ~> simple_character <~ ("\'" | "’") ^^ {x => CharacterExpr(transform(x).head)}
             //            | ("'" ~> declared_type <~ "'") ~ (("""\*/""".r ~> """((?!/\*).)+""".r) <~ """/\*""".r) ^^ {case t ~ str => val sc = Scalacode(str); sc.t = t; sc}
@@ -201,10 +201,12 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
          list
    } | "[" ~! "]" ^^^ {
       failure("EmptyExpr lists must have an explicitly defined type." +
-         "Examples of valid code: \"exprs = ['boolean']\", \"exprs = ['number']\" or " +
-         "\"exprs = ['char']\".\nNote that a list filled with empty lists is not empty.")
+         "Examples of valid code: \"exprs = ['boo']\", \"exprs = ['num']\" or " +
+         "\"exprs = ['cha']\".\nNote that a list filled with empty lists is not empty.")
       EmptyE //Just to satisfy Parser sexual typing needs.
    }
 
-   def n_list = "[" ~> rep1sep(expr, ",") <~ "]" ^^ {exs => ListE(exs.toArray)}
+   def n_list = "[" ~> rep1sep(expr, ",") <~ "]" ^^ {
+      exs => ListE(exs.toArray)
+   }
 }

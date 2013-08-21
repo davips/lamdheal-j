@@ -158,5 +158,4 @@ object Compiling {
       val eval = clss.newInstance().asInstanceOf[Runnable]
       eval.run()
    }
-
 }

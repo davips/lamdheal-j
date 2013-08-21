@@ -49,22 +49,31 @@ object TypeSystem {
    //   case class TypeOperator(name: String, args: Seq[Type]) extends Type
 
    case class FunctionT(from: Type, to: Type) extends Type {
-      override def toString = "→"
+      override def toString = from + "→" + to
    }
 
    case class ListT(elem_type: Type) extends Type {
+      override def toString = "[" + elem_type + "]"
    }
 
    case object CharT extends Type {
+      override def toString = "cha"
    }
 
    case object NumberT extends Type {
+      override def toString = "num"
    }
 
    case object BooleanT extends Type {
+      override def toString = "boo"
+   }
+
+   case object AnyT extends Type {
+      override def toString = "any"
    }
 
    case object EmptyT extends Type {
+      override def toString = "Ø"
    }
 
    //TypeOperator("[" + elem_type + "]", Array(elem_type))
@@ -83,12 +92,16 @@ object TypeSystem {
       "(%)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
       "(^)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
 
-      "(==)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
-      "(!=)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
-      "(>=)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
-      "(<=)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
-      "(>)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
-      "(<)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT))
+      "(==)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
+      "(!=)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
+      "(>=)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
+      "(<=)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
+      "(>)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
+      "(<)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
+
+      "<<" -> FunctionT(AnyT, ListT(CharT)), //show
+      "`" -> FunctionT(AnyT, EmptyT), //println
+      "`+" -> FunctionT(AnyT, EmptyT) //print
    )
 
    class Context(var env: Map[String, Type]) {
@@ -107,7 +120,7 @@ object TypeSystem {
                unify(FunctionT(argtype, resulttype), funtype)
             } catch {
                case e: TypeError => throw new TypeError("at line " + ": " + e.getMessage +
-                  "\nHint:\n" + FunctionT(argtype, resulttype) + "\ndiffers from\n" + funtype + "\n.")
+                  "\nHint: '" + FunctionT(argtype, resulttype) + "' differs from '" + funtype + "'.")
             }
             resulttype
          case CharE(_) =>
@@ -118,7 +131,7 @@ object TypeSystem {
                b.t = l.map {
                   case x =>
                      val xt = newctx.analyse(x, nongen)
-                     print(x + ": " + xt + ".   ")
+                     //                     print(x + ": " + xt + ".   ")
                      xt
                }.last
                b.t
@@ -215,6 +228,8 @@ object TypeSystem {
                ListT(freshrec(arg))
             case CharT => CharT
             case NumberT => NumberT
+            case EmptyT => EmptyT
+            case AnyT => AnyT
          }
       }
       freshrec(t)
@@ -246,8 +261,8 @@ object TypeSystem {
             unify(a.from, b.from)
             unify(a.to, b.to)
          }
-         case (CharT, CharT) | (NumberT, NumberT) => //Ok.
-         case (a, b) => throw new TypeError("Type mismatch: " + a + "≠" + b)
+         case (CharT, CharT) | (NumberT, NumberT) | (EmptyT, EmptyT) | (AnyT, _) | (_, AnyT) => //Ok.
+         case (a, b) => throw new TypeError("Type mismatch: '" + a + "' ≠ '" + b + "'.")
       }
    }
 
@@ -263,7 +278,7 @@ object TypeSystem {
    }
 
    // Note: must be called with v 'pre-pruned'
-   def isgeneric(v: VariableT, nongen: Set[VariableT]) = !(occursin(v, nongen))
+   def isgeneric(v: VariableT, nongen: Set[VariableT]) = !occursin(v, nongen)
 
    // Note: must be called with v 'pre-pruned'
    def occursintype(v: VariableT, type2: Type): Boolean = {
@@ -365,10 +380,10 @@ object HindleyMilner {
 
 
    def verify(ast: Expr, ctx: Context = new Context(TypeSystem.default_env)) {
-      print(ast + ": ")
+      //      print(ast + ": ")
       try {
          val t = ctx.analyse(ast)
-         print(t + ".   ")
+         //         print(t + ".   ")
 
       } catch {
          case t: ParseError => print(t.getMessage)
