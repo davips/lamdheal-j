@@ -1,6 +1,8 @@
 package lamdheal
 
 import lamdheal.TypeSystem._
+import java.io.FileReader
+import scala.io.Source
 
 /*  Copyright 2013 Davi Pereira dos Santos
     This file is part of Lamdheal.
@@ -22,18 +24,20 @@ object Compiling {
    var with_runtime = false
 
    def scalaType(typ: Type): String = typ match {
+      case FunctionT(from, to) => "((" + scalaType(from) + ") => " + scalaType(to) + ")"
       case ListT(eT) => "List[" + scalaType(eT) + "]"
       case NumberT => "Double"
       case BooleanT => "Boolean"
       case CharT => "Char"
       case EmptyT => "Unit"
+      case VariableT(_) => "Any"
    }
 
    def run(ex: Expr): String = {
       ex match {
          case ApplyE(f, a) => if (f.t != null && f.t.toString.startsWith("[")) run(f) + ".map(" + run(a) + ")" else run(f) + "(" + run(a) + ")"
          case AssignE(id, e) => "val " + id + "=" + run(e)
-         case BlockE(l) => "{" + l.map(run).mkString("\n") + "}"
+         case BlockE(l) => "{" + l.map(run).mkString("\n") + "}" //Block: { } ou ( ) ?
          case BooleanE(b) => b
          case CharE(c) => "'" + c + "'"
          case EmptyE => "Unit"
@@ -55,7 +59,10 @@ object Compiling {
             case x => x
          }
          case lambda@LambdaE(arg, body) => "(" + arg + ":" + scalaType(lambda.t.asInstanceOf[FunctionT].from) + ") => {" + run(body) + "}"
-         case ListE(l) => "List(" + l.map(run).mkString(",") + ")"
+         case liste@ListE(l) => liste.t.asInstanceOf[ListT].elem_type match {
+            case CharT => "\"" + l.map(_.asInstanceOf[CharE].c).map(run).mkString + "\""
+            case _ => scalaType(liste.t) + "(" + l.map(run).mkString(",") + ")"
+         }
          case NumberE(n) => n
          case TypeE(t) => {with_runtime = true; "Runtime.interpret(\"" + t + "\")"}
       }
@@ -63,25 +70,9 @@ object Compiling {
 
    def compile(expr: Expr) {
       val i = System.currentTimeMillis()
-      val source_core = run(expr)
-      val source = if (with_runtime)
-         "object Runtime {\n   def interpret(typ: String)(lst: List[Char]) = {\n      val str = \"val " +
-            "resulting_value = \" + lst.mkString\n      import java.io.{FileOutputStream, PrintStream}\n      val out = new PrintStream(new FileOutputStream(\"/dev/null\"))\n      val flusher = new java.io.PrintWriter" +
-            "(out)\n      val interpret = {\n         val settings = new scala.tools.nsc.GenericRunnerSettings(println)\n         settings.usejavacp.value = true\n         new scala.tools.nsc.interpreter.IMain" +
-            "(settings, flusher)\n      }\n      interpret.interpret(str)\n      val resulting_type = interpret.typeOfTerm(\"resulting_value\")\n      resulting_type.toString() match {\n         case \"String\" => if " +
-            "(typ != \"[cha]\") throw new Exception(\"It was expected a '\" + typ + \"', not a string from Scala code.\")\n         case \"Double\" => if (typ != \"num\") throw new Exception(\"It was expected a '\" + " +
-            "typ + \"', not a double from Scala code.\")\n         case \"Float\" => if (typ != \"num\") throw new Exception(\"It was expected a '\" + typ + \"', " +
-            "not a float from Scala code.\")\n         case \"Int\" => if (typ != \"num\") throw new Exception(\"It was expected a '\" + typ + \"', not an int from Scala code.\")\n         case \"Long\" => if (typ != " +
-            "\"num\") throw new Exception(\"It was expected a '\" + typ + \"', not a long from Scala code.\")\n         case \"Boolean\" => if (typ != \"boo\") throw new Exception(\"It was expected a '\" + typ + \"', " +
-            "not a boolean from Scala code.\")\n         case \"Char\" => if (typ != \"cha\") throw new Exception(\"It was expected a '\" + typ + \"', not a char from Scala code.\")\n         case \"Unit\" => if (typ " +
-            "!= \"emp\") throw new Exception(\"It was expected a '\" + typ + \"', not a () from Scala code.\")\n         case \"List\" => if (!typ.startsWith(\"[\")) throw new Exception(\"It was expected a '\" + typ +" +
-            " \"', not a list from Scala code.\")\n         case x => throw new Exception(typ + \" expected, but \" + x + \" coming from Scala code.\")\n      }\n      interpret.valueOfTerm(\"resulting_value\").get\n " +
-            "  }\n}" +
-            "\n" + source_core + "\n"
-      else source_core
-      //            println(source)
+      val source = Source.fromFile("Runtime.scala").mkString + "\n" + run(expr) + "\n"
+      println(source)
       //      ScalaCompiler.compile(source)
-      //      ScalaCompiler.interpret(source)
       ScalaCompiler.external_run(source)
       println((System.currentTimeMillis() - i) / 1000.0 + " <-\n")
    }

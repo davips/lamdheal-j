@@ -1,13 +1,15 @@
 /*
+`"inicio"
 m=(*)
 f=\\x,y m x y
 a = [1, 2, f 2 3]
 //, 'num' */System.currentTimeMillis()/*]
 `a
 
-b=a (+)
+b = a (+)
 `b
-c = b (\\f f 3 4)
-`c
 
+//c = b (\\f f 3 4)
+//`c
+`"fim"
 */

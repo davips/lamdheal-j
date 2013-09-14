@@ -1,6 +1,6 @@
 /**
- * Not to use.
- * This a copy of runtime defs.
+ * Not to use directly.
+ * This is for runtime only.
  */
 object Runtime {
    def interpret(typ: String)(lst: List[Char]) = {

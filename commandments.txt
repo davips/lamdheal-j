@@ -1,5 +1,5 @@
 Programmer's lazyness precedes language's lazyness.
-A clean imperative loop is better than a complicated tail recursion.
+Char clean imperative loop is better than a complicated tail recursion.
 English is not better than other languages.
 The least dynamic, the least error-prone (and the more debuggable).
 Capitalists are not purists, so mutate with $.
