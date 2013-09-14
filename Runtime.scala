@@ -1,12 +1,7 @@
 /**
  * Not to use.
- * This a copy of runtime def.
+ * This a copy of runtime defs.
  */
-implicit class IntWithTimes[T](x: List[T]) {
-   def apply[A](f: (T) => A): Unit = {
-      x map f
-   }
-}
 object Runtime {
    def interpret(typ: String)(lst: List[Char]) = {
       val str = "val resulting_value = " + lst.mkString
@@ -35,9 +30,3 @@ object Runtime {
       interpret.valueOfTerm("resulting_value").get
    }
 }
-{Unit
-   Unit
-   val a=List(1,2,3,Runtime.interpret("num")(List('S','y','s','t','e','m','.','c','u','r','r','e','n','t','T','i','m','e','M','i','l','l','i','s','(',')')))
-   Unit
-   Unit
-   println(a)}
