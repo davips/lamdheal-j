@@ -1,127 +1,62 @@
 package lamdheal
 
-/*
- * Copyright 2010 Twitter, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
-//import scala.tools.nsc.{Global, Settings}
-//import scala.reflect.internal.util.BatchSourceFile
-//import tools.nsc.io.{VirtualDirectory, AbstractFile}
-//import tools.nsc.interpreter.AbstractFileClassLoader
-//import java.security.MessageDigest
-//import java.math.BigInteger
-//import collection.mutable
-//import java.io.File
-//
-//object CompileTest {
-//      val compiler = new ScalaCompiler(Some(new File("/tmp/d")))
-////   val compiler = new ScalaCompiler(None)
-//
-//   def main(args: Array[String]) {
-//val script = "val ii=System.currentTimeMillis();" +
-//   "   var n = 1d\n   var n_1 = 0d\n   var fibo = 0d\n   var j=0d\n   var i=1d\n   var res=0d\n" +
-//   "   while(i<=19977) {\t      \n      n=1\n      n_1=0\n      j=1\n      while(j<=19977) {\t      \n         fibo = (i + " +
-//   "n + n_1 + j) / 123456d\n         n_1 = n\n         n = fibo\n         j+=1\n      }\n      res += fibo\n      i+=1\n   }\n" +
-//   "   println(res)\n" +
-//   "println((System.currentTimeMillis() - ii)/1000.0 + \"\\n\")"
+/*  Copyright 2013 Davi Pereira dos Santos
+    This file is part of Lamdheal.
 
-//      val i = System.currentTimeMillis()
-//      compiler.eval[Unit](script)
-//      println((System.currentTimeMillis() - i) / 1000.0 + "\n")
-//   }
-//}
-//
-//class ScalaCompiler(targetDir: Option[File]) {
-//
-//   val target = targetDir match {
-//      case Some(dir) => AbstractFile.getDirectory(dir)
-//      case None => new VirtualDirectory("(memory)", None)
-//   }
-//
-//   val classCache = mutable.Map[String, Class[_]]()
-//
-//   private val settings = new Settings()
-//   settings.deprecation.value = false // enable detailed deprecation warnings
-//   settings.unchecked.value = false // enable detailed unchecked warnings
-//   settings.outputDirs.setSingleOutput(target)
-//   settings.usejavacp.value = true
-//   settings.nobootcp.value=true
-//
-//   private val global = new Global(settings)
-//   private lazy val run = new global.Run
-//
-//   val classLoader = new AbstractFileClassLoader(target, this.getClass.getClassLoader)
-//
-//   /** Compiles the code as a class into the class loader of this compiler.
-//     *
-//     * @param code
-//     * @return
-//     */
-//   def compile(code: String) = {
-//      val className = "Lamdheal" //classNameForCode(code)
-//      findClass(className).getOrElse {
-//         val sourceFiles = List(new BatchSourceFile("(inline)", wrapCodeInClass(className, code)))
-//         run.compileSources(sourceFiles)
-//         findClass(className).get
-//      }
-//   }
-//
-//   /** Compiles the source string into the class loader and
-//     * evaluates it.
-//     *
-//     * @param code
-//     * @tparam T
-//     * @return
-//     */
-//   def eval[T](code: String): T = {
-//      val cls = compile(code)
-//      cls.getConstructor().newInstance().asInstanceOf[() => Any].apply().asInstanceOf[T]
-//   }
-//
-//   def findClass(className: String): Option[Class[_]] = {
-//      synchronized {
-//         classCache.get(className).orElse {
-//            try {
-//               val cls = classLoader.loadClass(className)
-//               classCache(className) = cls
-//               Some(cls)
-//            } catch {
-//               case e: ClassNotFoundException => None
-//            }
-//         }
-//      }
-//   }
-//
-//   protected def classNameForCode(code: String): String = {
-//      val digest = MessageDigest.getInstance("SHA-1").digest(code.getBytes)
-//      "sha" + new BigInteger(1, digest).toString(16)
-//   }
-//
-//   /*
-//   * Wrap source code in a new class with an apply method.
-//   */
-//   private def wrapCodeInClass(className: String, code: String) = {
-//      "class " + className + " extends (() => Any) {\n" +
-//         "  def apply() = {\n" +
-//         code + "\n" +
-//         "  }\n" +
-//         "}\n"
-//   }
-//}
+    Lamdheal is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Lamdheal is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Lamdheal.  If not, see <http://www.gnu.org/licenses/>.*/
 
 object ScalaCompiler {
+   def external_run(s: String) {
+      import java.io.FileWriter
+      val fw = new FileWriter("output.scala")
+      fw.write(s)
+      fw.close()
+      import sys.process.Process
+      val gera = Process("scala output.scala")
+      try {
+         gera.!!
+      } catch {
+         case _: Throwable => println(s)
+      } finally {
+         gera.lines map println
+      }
+   }
+
+   def compile(str: String) {
+      import scala.reflect.runtime._
+      val cm = universe.runtimeMirror(getClass.getClassLoader)
+      import scala.tools.reflect.ToolBox
+      val tb = cm.mkToolBox()
+      tb.eval(tb.parse(str))
+   }
+
+   def interpret(str: String) {
+      import java.io.{FileOutputStream, PrintStream}
+      val out = new PrintStream(new FileOutputStream("/dev/null"))
+      val flusher = new java.io.PrintWriter(out) // System.out
+      val interpret = {
+         val settings = new scala.tools.nsc.GenericRunnerSettings(println)
+         settings.usejavacp.value = true
+         //         settings.classpath.value="/home/davi/unversioned/software/scala-2.10.2/lib/scala-reflect.jar:/home/davi/unversioned/software/scala-2.10.2/lib/scala-compiler
+         // .jar:/home/davi/unversioned/software/scala-2.10.2/lib/scala-library.jar"
+         new scala.tools.nsc.interpreter.IMain(settings, flusher)
+      }
+
+      interpret.interpret(str)
+   }
+
    def main(args: Array[String]) {
       val i = System.currentTimeMillis()
       val script = "val ii=System.currentTimeMillis();" +
@@ -130,11 +65,7 @@ object ScalaCompiler {
          "n + n_1 + j) / 123456d\n         n_1 = n\n         n = fibo\n         j+=1\n      }\n      res += fibo\n      i+=1\n   }\n" +
          "   println(res)\n" +
          "println((System.currentTimeMillis() - ii)/1000.0 + \"\\n\")"
-      import scala.reflect.runtime._
-      val cm = universe.runtimeMirror(getClass.getClassLoader)
-      import scala.tools.reflect.ToolBox
-      val tb = cm.mkToolBox()
-      tb.eval(tb.parse(script))
+      compile(script)
       println((System.currentTimeMillis() - i) / 1000.0 + " <-\n")
    }
 }

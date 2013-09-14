@@ -48,7 +48,7 @@ case class CharE(c: Char) extends Expr {
 }
 
 case class ListE(l: Array[Expr]) extends Expr {
-   override def toString = if (t!= null && t.getClass == CharT)
+   override def toString = if (t != null && t == CharT)
       "\"" + l.mkString + "\""
    else
       "[" + l.mkString(",") + "]"

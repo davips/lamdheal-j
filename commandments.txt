@@ -5,4 +5,4 @@ The least dynamic, the least error-prone (and the more debuggable).
 Capitalists are not purists, so mutate with $.
 Composition precedes application, application precedes the rest.
 Too much abstraction becomes distraction.
-When in doubt (if it is really needed), use parenthesis.
+When in doubt, use parenthesis.

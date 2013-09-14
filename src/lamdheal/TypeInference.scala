@@ -73,7 +73,7 @@ object TypeSystem {
    }
 
    case object EmptyT extends Type {
-      override def toString = "Ø"
+      override def toString = "emp"
    }
 
    //TypeOperator("[" + elem_type + "]", Array(elem_type))
@@ -92,8 +92,9 @@ object TypeSystem {
       "(%)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
       "(^)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
 
-      "(==)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
-      "(!=)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
+      "(==)" -> FunctionT(AnyT, FunctionT(AnyT, BooleanT)), //TODO:disallow comparison of different types
+      "(!=)" -> FunctionT(AnyT, FunctionT(AnyT, BooleanT)),
+
       "(>=)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
       "(<=)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
       "(>)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
@@ -112,17 +113,35 @@ object TypeSystem {
             val defntype = analyse(expr, nongen)
             env += v -> defntype
             analyse(expr, nongen)
-         case ApplyE(fn, arg) =>
+         case ap@ApplyE(fn, arg) =>
             val funtype = analyse(fn, nongen)
-            val argtype = analyse(arg, nongen)
-            val resulttype = newVariable
-            try {
-               unify(FunctionT(argtype, resulttype), funtype)
-            } catch {
-               case e: TypeError => throw new TypeError("at line " + ": " + e.getMessage +
-                  "\nHint: '" + FunctionT(argtype, resulttype) + "' differs from '" + funtype + "'.")
+            if (funtype.toString.startsWith("[")) {
+               val argtype = analyse(arg, nongen)
+               val resulttype = newVariable
+               val fmaptype = FunctionT(funtype.asInstanceOf[ListT].elem_type, resulttype)
+               try {
+                  unify(fmaptype, argtype)
+               } catch {
+                  case e: TypeError => throw new TypeError("at line " + ": " + e.getMessage +
+                     "\nHint in list application: '" + FunctionT(argtype, resulttype) + "' differs from '" + funtype + "'.")
+               }
+               ap.fn.t = funtype
+               ap.arg.t = fmaptype
+               ap.t = ListT(resulttype)
+               ap.t
+            } else {
+               val argtype = analyse(arg, nongen)
+               val resulttype = newVariable
+               try {
+                  unify(FunctionT(argtype, resulttype), funtype)
+               } catch {
+                  case e: TypeError => throw new TypeError("at line " + ": " + e.getMessage +
+                     "\nHint in application: '" + FunctionT(argtype, resulttype) + "' differs from '" + funtype + "'.")
+               }
+               resulttype
             }
-            resulttype
+         case BooleanE(_) =>
+            BooleanT
          case CharE(_) =>
             CharT
          case b@BlockE(l) =>
@@ -142,11 +161,12 @@ object TypeSystem {
          case EmptyE => EmptyT
          case IdentE(name) =>
             gettype(name, nongen)
-         case LambdaE(arg, body) =>
+         case la@LambdaE(arg, body) =>
             val argtype = newVariable
             val newctx = new Context(env + (arg -> argtype))
             val resulttype = newctx.analyse(body, nongen + argtype)
-            FunctionT(argtype, resulttype)
+            la.t = FunctionT(newctx.gettype(arg, nongen + argtype), resulttype) //tentativa de não exigir tipo no argumento
+            la.t
          //         case LetE(v, defn, body) =>
          //            val defntype = analyse(defn, nongen)
          //            val newctx = new Context(env + (v -> defntype))
@@ -379,16 +399,18 @@ object HindleyMilner {
    }
 
 
-   def verify(ast: Expr, ctx: Context = new Context(TypeSystem.default_env)) {
+   def verify(ast: Expr, ctx: Context = new Context(TypeSystem.default_env)) = {
+      var r = false
       //      print(ast + ": ")
       try {
          val t = ctx.analyse(ast)
          //         print(t + ".   ")
-
+         r = true
       } catch {
          case t: ParseError => print(t.getMessage)
          case t: TypeError => print(t.getMessage)
       }
       println()
+      r
    }
 }

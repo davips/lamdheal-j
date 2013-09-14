@@ -30,7 +30,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
       u match {
          case Success(t, next) => {
             val ug = u.get
-//            ug.l map println
+            //            ug.l map println
             ug
          }
          case f => {
@@ -61,7 +61,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
 
    def evaluate = (lambda | equality) * ("|" ^^^ ApplyE)
 
-   def lambda: Parser[Expr] = ("\\\\" ~> (identifier)) ~ expr ^^ LambdaE
+   def lambda: Parser[Expr] = (("\\\\" | ",") ~> identifier) ~ expr ^^ LambdaE
 
    def equality = sum ~ rep("==" ~ sum | "!=" ~ sum | ">=" ~ sum | "<=" ~ sum | ">" ~ sum | "<" ~ sum) ^^ {
       case number ~ list =>
@@ -117,7 +117,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
             case 1 => ListE(s.toArray map CharE)
          }
          //         exprs.t = HindleyDamasMilner.CharT
-         //         l.t = ListT(CharT)
+//         l.t = ListT(CharT)
          l
       } else {
          if (slices.length % 2 == 0) failure("Unmatched ' inside string '" + s + "'.")
@@ -148,8 +148,13 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
    def atomic_expr: Parser[Expr] = {
       (
          "<<" ^^^ IdentE("<<")
+            | "(*)" ^^^ IdentE("(*)")| "(/)" ^^^ IdentE("(/)")| "(\\)" ^^^ IdentE("(\\)")
+            | "(+)" ^^^ IdentE("(+)")| "(-)" ^^^ IdentE("(-)")| "(%)" ^^^ IdentE("(%)")
+            | "(>)" ^^^ IdentE("(>)")| "(^)" ^^^ IdentE("(^)")| "(>=)" ^^^ IdentE("(>=)")
+            | "(<)" ^^^ IdentE("(<)")| "(<=)" ^^^ IdentE("(<=)")| "(==)" ^^^ IdentE("(==)")
+            | "(!=)" ^^^ IdentE("(!=)")
             | identifier ^^ {x => IdentE(x)}
-            | java_code
+            | scala_code
             | "(" ~> block <~ ")"
             //            | "[" ~> (sum(h) <~ "..") ~! sum(h) <~ "]" ^^ ListInterval
             | list
@@ -177,7 +182,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
    //         ApplyE(e, a)
    //   } | application(h)
 
-   def java_code = type_declaration ~ ("""\*/(?:.|[\n\r])+?/\*""".r) ^^ {
+   def scala_code = type_declaration ~ ("""\*/(?:.|[\n\r])+?/\*""".r) ^^ {
       case dec_type ~ code =>
          ApplyE(TypeE(dec_type), ListE(code.toArray.drop(2).dropRight(2) map CharE))
    }

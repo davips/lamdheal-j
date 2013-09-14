@@ -1,9 +1,6 @@
 package lamdheal
 
 import io.Source
-import org.codehaus.janino.ClassBodyEvaluator
-import java.util
-import lamdheal.TypeSystem.{Context, Type}
 
 /*  Copyright 2013 Davi Pereira dos Santos
     This file is part of Lamdheal.
@@ -27,8 +24,8 @@ object Main extends App {
       println("Usage:\njava -jar lamdheal.jar input-file.lhe")
       val source_code = Source.fromFile("example.lhe").getLines().mkString("\n")
       val ast = Parsing.parse(source_code)
-      HindleyMilner.verify(ast) //AST is changed after type inference.
-      Compiling.compile(ast)
+      if (HindleyMilner.verify(ast)) //AST is changed after type inference.
+         Compiling.compile(ast)
    } else {
       val source_code = Source.fromFile(args(0)).getLines().mkString("\n")
    }

@@ -1,10 +1,6 @@
 package lamdheal
 
-import java.io.StringReader
-
-import org.codehaus.janino.SimpleCompiler
-
-//import org.codehaus.commons.compiler.jdk.SimpleCompiler
+import lamdheal.TypeSystem._
 
 /*  Copyright 2013 Davi Pereira dos Santos
     This file is part of Lamdheal.
@@ -23,139 +19,76 @@ import org.codehaus.janino.SimpleCompiler
     along with Lamdheal.  If not, see <http://www.gnu.org/licenses/>.*/
 
 object Compiling {
+   var with_runtime = false
 
-   import TypeSystem._
-
-   def return_type(t: Type): String = t match {
-      case NumberT => "double"
-      case EmptyT => "Object"
-      case ListT(et) => "ArrayList"
-      case v@VariableT(i) => return_type(v.instance.get) //case None ??
+   def scalaType(typ: Type): String = typ match {
+      case ListT(eT) => "List[" + scalaType(eT) + "]"
+      case NumberT => "Double"
+      case BooleanT => "Boolean"
+      case CharT => "Char"
+      case EmptyT => "Unit"
    }
 
-   //   var var_counter=0
    def run(ex: Expr): String = {
       ex match {
-         case ApplyE(f, a) => (f, a) match {
-            //                     case (ShowE, x) => x + ".toString()"
-            case (TypeE(t), ListE(l)) =>
-               val java_lines = l.map(_.asInstanceOf[CharE].c).mkString.split("\n")
-               val code = if (t == EmptyT) {
-                  java_lines.mkString(";\n") + "return new Empty();"
-               } else {
-                  java_lines.dropRight(1).mkString(";\n") + "return " + java_lines.last + ";\n"
-               }
-               "new Anon() { public Node f(Node obj) {\n" +
-                  code + "\n" +
-                  "} }.f(null)\n"
-//               "new Anon() { public " + return_type(t) + " f() {\n" +
-//                  code + "\n" +
-//                  "} }.f()\n"
-            case (x, y) => "Runtime.apply(" + run(x) + ", " + run(y) + ")"
+         case ApplyE(f, a) => if (f.t != null && f.t.toString.startsWith("[")) run(f) + ".map(" + run(a) + ")" else run(f) + "(" + run(a) + ")"
+         case AssignE(id, e) => "val " + id + "=" + run(e)
+         case BlockE(l) => "{" + l.map(run).mkString("\n") + "}"
+         case BooleanE(b) => b
+         case CharE(c) => "'" + c + "'"
+         case EmptyE => "Unit"
+         case IdentE(id) => id match {
+            case "`" => "println"
+            case "`+" => "print"
+            case "(*)" => "((x:Double) => (y:Double) => x*y)"
+            case "(/)" => "((x:Double) => (y:Double) => x/y)"
+            case "(\\)" => "((x:Double) => (y:Double) => math.round(x/y))"
+            case "(%)" => "((x:Double) => (y:Double) => x%y)"
+            case "(+)" => "((x:Double) => (y:Double) => x+y)"
+            case "(-)" => "((x:Double) => (y:Double) => x-y)"
+            case "(>=)" => "((x:Double) => (y:Double) => x>=y)"
+            case "(<=)" => "((x:Double) => (y:Double) => x<=y)"
+            case "(>)" => "((x:Double) => (y:Double) => x>y)"
+            case "(<)" => "((x:Double) => (y:Double) => x<y)"
+            case "(==)" => "((x:Any) => (y:Any) => x==y)"
+            case "(!=)" => "((x:Any) => (y:Any) => x!=y)"
+            case x => x
          }
-         case AssignE(id, expr) =>
-            //                     var_counter += 1
-            //                     val tranlated_id = id + var_counter.toString
-            //                     translation += (id -> tranlated_id)
-            //               println(expr + " before match")
-            expr.t match {
-               case NumberT => "final Double " + id + " = " + run(expr) + ";\n"
-               case ListT(CharT) => "final String " + id + " = " + run(expr) + ";\n"
-               case ListT(_) => "final ArrayList " + id + " = " + run(expr) + ";\n"
-            }
-         case c: CharE => "'" + c.toString + "'"
-         case b@BlockE(l) =>
-            val statements = l.filterNot(EmptyE ==).map(run).map("   " +)
-            if (statements.length > 0) {
-               "new Anon() { public Object f(Object obj) {\n" +
-                  statements.dropRight(1).mkString(";\n") + ";\n" +
-                  "return " + (if (return_type(b.t) != "void") statements.last + ";" else " new Empty();") + "\n" +
-                  "} } "
-//               "new Anon() { public " + return_type(b.t) + " f() {\n" +
-//                  statements.dropRight(1).mkString(";\n") + ";\n" +
-//                  "return " + (if (return_type(b.t) != "void") statements.last + ";" else " new Empty();") + "\n" +
-//                  "} } "
-            } else "new Empty()"
-         //
-         case EmptyE => ""
-         //         case la@LambdaE(param, BlockE(l)) =>
-         //            val from_type = la.t.asInstanceOf[FunctionT].from match {
-         //               case NumberT => "double"
-         //               case EmptyT => "void"
-         //            }
-         //            val to_type = la.t.asInstanceOf[FunctionT].to match {
-         //               case NumberT => "double"
-         //               case EmptyT => "void"
-         //            }
-         //            "new Anon() { public " + to_type + " f(" + from_type + " " + param + ") {\n" +
-         //               l.filterNot(EmptyExpr ==).map(run).map("   " +).mkString(";\n") +
-         //               "};\n"
+         case lambda@LambdaE(arg, body) => "(" + arg + ":" + scalaType(lambda.t.asInstanceOf[FunctionT].from) + ") => {" + run(body) + "}"
+         case ListE(l) => "List(" + l.map(run).mkString(",") + ")"
          case NumberE(n) => n
-         //         case PrintLnE => "System.out.println"
-         case IdentE(name) => name
-         //         case NumberExpr(n) => n.toString
-//         case li@ListE(l) =>
-//            "new Anon() { public " + return_type(li.t) + " f() {\n" +
-//               "      ArrayList al = new ArrayList();\n" +
-//               l.map(x => "      al.add(" + run(x) + ");\n").mkString +
-//               "      return al;\n" +
-//               "} } "
-         case li@ListE(l) =>
-            "new Anon() { public Object f(Object obj) {\n" +
-               "      ArrayList al = new ArrayList();\n" +
-               l.map(x => "      al.add(" + run(x) + ");\n").mkString +
-               "      return al;\n" +
-               "} } "
-
-
-         //         case ListInterval(i, f) => "built_in_function_range(" + run(i) + "," + run(f) + ")"
+         case TypeE(t) => {with_runtime = true; "Runtime.interpret(\"" + t + "\")"}
       }
    }
 
    def compile(expr: Expr) {
-      val source = "import java.util.ArrayList;\n" +
-         "import java.util.Iterator;\n" +
-         "public class Empty {\n" +
-         "   public String toString() {" +
-         "      return \"Ø\";\n" +
-         "   }" +
-         "}\n" +
-         "public interface Anon {\n" +
-         "   Object f(Object o);" +
-         "}\n" +
-         "public class RuntimeMain implements Runnable {\n" +
-         "   public static void main(String[] args) {\n" +
-         "      RuntimeMain m = new RuntimeMain();\n" +
-         "      m.run();\n" +
-         "   }\n" +
-         "    \n" +
-         "   public ArrayList built_in_function_range(Double i, Double f) {\n" +
-         "      ArrayList al = new ArrayList();\n" +
-         "      for (Double x=i; x<=f; x++)\n" +
-         "         al.add(x);\n" +
-         "      return al;\n" +
-         "   }\n" +
-         "    \n" +
-         "   public ArrayList built_in_function_map(ArrayList al, Anon A) {\n" +
-         "      ArrayList al2 = new ArrayList();\n" +
-         "      for (int x=0; x<al.size(); x++)\n" +
-         "         al2.add(A.f(al.get(x)));\n" +
-         "      return al2;\n" +
-         "   }\n" +
-         "    \n" +
-         "   public void run() {\n" +
-         "      System.out.println(\n" +
-         run(expr).split('\n').map("         " +).mkString("\n") + "\n" +
-         "      );\n" +
-         "   }\n" +
-         "}\n"
-
-      println(source)
-
-      val compiler = new SimpleCompiler()
-      compiler.cook(new StringReader(source))
-      val clss = compiler.getClassLoader.loadClass("RuntimeMain")
-      val eval = clss.newInstance().asInstanceOf[Runnable]
-      eval.run()
+      val i = System.currentTimeMillis()
+      val source_core = run(expr)
+      val source = if (with_runtime)
+         "object Runtime {\n   def interpret(typ: String)(lst: List[Char]) = {\n      val str = \"val " +
+            "resulting_value = \" + lst.mkString\n      import java.io.{FileOutputStream, PrintStream}\n      val out = new PrintStream(new FileOutputStream(\"/dev/null\"))\n      val flusher = new java.io.PrintWriter" +
+            "(out)\n      val interpret = {\n         val settings = new scala.tools.nsc.GenericRunnerSettings(println)\n         settings.usejavacp.value = true\n         new scala.tools.nsc.interpreter.IMain" +
+            "(settings, flusher)\n      }\n      interpret.interpret(str)\n      val resulting_type = interpret.typeOfTerm(\"resulting_value\")\n      resulting_type.toString() match {\n         case \"String\" => if " +
+            "(typ != \"[cha]\") throw new Exception(\"It was expected a '\" + typ + \"', not a string from Scala code.\")\n         case \"Double\" => if (typ != \"num\") throw new Exception(\"It was expected a '\" + " +
+            "typ + \"', not a double from Scala code.\")\n         case \"Float\" => if (typ != \"num\") throw new Exception(\"It was expected a '\" + typ + \"', " +
+            "not a float from Scala code.\")\n         case \"Int\" => if (typ != \"num\") throw new Exception(\"It was expected a '\" + typ + \"', not an int from Scala code.\")\n         case \"Long\" => if (typ != " +
+            "\"num\") throw new Exception(\"It was expected a '\" + typ + \"', not a long from Scala code.\")\n         case \"Boolean\" => if (typ != \"boo\") throw new Exception(\"It was expected a '\" + typ + \"', " +
+            "not a boolean from Scala code.\")\n         case \"Char\" => if (typ != \"cha\") throw new Exception(\"It was expected a '\" + typ + \"', not a char from Scala code.\")\n         case \"Unit\" => if (typ " +
+            "!= \"emp\") throw new Exception(\"It was expected a '\" + typ + \"', not a () from Scala code.\")\n         case \"List\" => if (!typ.startsWith(\"[\")) throw new Exception(\"It was expected a '\" + typ +" +
+            " \"', not a list from Scala code.\")\n         case x => throw new Exception(typ + \" expected, but \" + x + \" coming from Scala code.\")\n      }\n      interpret.valueOfTerm(\"resulting_value\").get\n " +
+            "  }\n}" +
+            "\n" + source_core + "\n"
+      else source_core
+      //            println(source)
+      //      ScalaCompiler.compile(source)
+      //      ScalaCompiler.interpret(source)
+      ScalaCompiler.external_run(source)
+      println((System.currentTimeMillis() - i) / 1000.0 + " <-\n")
    }
+
+   //   def executa_shell(code: String) = {
+   //      val gera = Process(code)
+   //      gera.!! //run()
+   //      ListExpr(gera.lines.toArray.map(x => ListExpr(x.toCharArray map CharacterExpr)))
+   //   }
 }
