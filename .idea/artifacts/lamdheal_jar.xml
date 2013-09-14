@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="lamdheal:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/lamdheal_jar</output-path>
+    <root id="archive" name="lamdheal.jar">
+      <element id="module-output" name="lamdheal" />
+      <element id="extracted-dir" path="$USER_HOME$/unversioned/software/scala-2.10.2/lib/scala-library.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/unversioned/software/scala-2.10.2/lib/scala-reflect.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/unversioned/software/scala-2.10.2/lib/scala-compiler.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
