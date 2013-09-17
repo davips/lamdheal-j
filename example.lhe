@@ -1,10 +1,13 @@
 /*
-`"inicio"
+`]"inicio"
 m=(*)
+`"1"
 f=\\x,y m x y
 a = [1, 2, f 2 3]
 //, 'num' */System.currentTimeMillis()/*]
+`"bla"
 `a
+`"bloa"
 
 b = a (+)
 `b

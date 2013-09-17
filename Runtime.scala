@@ -3,6 +3,16 @@
  * This is for runtime only.
  */
 object Runtime {
+
+   class L[A](val l: List[A], typ: String) {
+      override def toString = typ match {
+         case "cha" => l.mkString
+         case _ => "[" + l.mkString(", ") + "]"
+      }
+
+      def apply[U](f: (A) => U) = { l map f }
+   }
+
    def interpret(typ: String)(lst: List[Char]) = {
       val str = "val resulting_value = " + lst.mkString
       import java.io.{FileOutputStream, PrintStream}
@@ -28,5 +38,13 @@ object Runtime {
          case x => throw new Exception(typ + " expected, but " + x + " coming from Scala code.")
       }
       interpret.valueOfTerm("resulting_value").get
+   }
+
+   def prt_as_list(l: L[Char]) {
+      print("[" + l.l.mkString(",") + "]")
+   }
+
+   def prtln_as_list(l: L[Char]) {
+      println("[" + l.l.mkString(",") + "]")
    }
 }

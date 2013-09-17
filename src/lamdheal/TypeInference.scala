@@ -49,7 +49,7 @@ object TypeSystem {
    //   case class TypeOperator(name: String, args: Seq[Type]) extends Type
 
    case class FunctionT(from: Type, to: Type) extends Type {
-      override def toString = from + "→" + to
+      override def toString = "{" + from + "→" + to + "}"
    }
 
    case class ListT(elem_type: Type) extends Type {
@@ -102,7 +102,9 @@ object TypeSystem {
 
       "<<" -> FunctionT(AnyT, ListT(CharT)), //show
       "`" -> FunctionT(AnyT, EmptyT), //println
-      "`+" -> FunctionT(AnyT, EmptyT) //print
+      "`+" -> FunctionT(AnyT, EmptyT), //print
+      "`]" -> FunctionT(ListT(CharT), EmptyT), //println '[cha]' as list
+      "`]+" -> FunctionT(ListT(CharT), EmptyT) //print '[cha]' as list
    )
 
    class Context(var env: Map[String, Type]) {

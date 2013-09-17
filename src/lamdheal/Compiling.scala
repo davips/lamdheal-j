@@ -25,7 +25,7 @@ object Compiling {
 
    def scalaType(typ: Type): String = typ match {
       case FunctionT(from, to) => "((" + scalaType(from) + ") => " + scalaType(to) + ")"
-      case ListT(eT) => "List[" + scalaType(eT) + "]"
+      case ListT(eT) => "Runtime.L"
       case NumberT => "Double"
       case BooleanT => "Boolean"
       case CharT => "Char"
@@ -35,7 +35,8 @@ object Compiling {
 
    def run(ex: Expr): String = {
       ex match {
-         case ApplyE(f, a) => if (f.t != null && f.t.toString.startsWith("[")) run(f) + ".map(" + run(a) + ")" else run(f) + "(" + run(a) + ")"
+         //         case ApplyE(f, a) => if (f.t != null && f.t.toString.startsWith("[")) run(f) + ".map(" + run(a) + ")" else run(f) + "(" + run(a) + ")"
+         case ApplyE(f, a) => run(f) + "(" + run(a) + ")"
          case AssignE(id, e) => "val " + id + "=" + run(e)
          case BlockE(l) => "{" + l.map(run).mkString("\n") + "}" //Block: { } ou ( ) ?
          case BooleanE(b) => b
@@ -44,6 +45,8 @@ object Compiling {
          case IdentE(id) => id match {
             case "`" => "println"
             case "`+" => "print"
+            case "`]" => "Runtime.prtln_as_list"
+            case "`]+" => "Runtime.prt_as_list"
             case "(*)" => "((x:Double) => (y:Double) => x*y)"
             case "(/)" => "((x:Double) => (y:Double) => x/y)"
             case "(\\)" => "((x:Double) => (y:Double) => math.round(x/y))"
@@ -59,22 +62,19 @@ object Compiling {
             case x => x
          }
          case lambda@LambdaE(arg, body) => "(" + arg + ":" + scalaType(lambda.t.asInstanceOf[FunctionT].from) + ") => {" + run(body) + "}"
-         case liste@ListE(l) => liste.t.asInstanceOf[ListT].elem_type match {
-            case CharT => "\"" + l.map(_.asInstanceOf[CharE].c).map(run).mkString + "\""
-            case _ => scalaType(liste.t) + "(" + l.map(run).mkString(",") + ")"
-         }
+         case liste@ListE(l) =>
+            val eT = liste.t.asInstanceOf[ListT].elem_type
+            " new " + scalaType(liste.t) + "[" + scalaType(eT) + "](List(" + l.map(run).mkString(",") + "),\"" + eT + "\")"
          case NumberE(n) => n
          case TypeE(t) => {with_runtime = true; "Runtime.interpret(\"" + t + "\")"}
       }
    }
 
-   def compile(expr: Expr) {
-      val i = System.currentTimeMillis()
+   def compile_and_run(expr: Expr) {
       val source = Source.fromFile("Runtime.scala").mkString + "\n" + run(expr) + "\n"
-      println(source)
+//      println(source)
       //      ScalaCompiler.compile(source)
       ScalaCompiler.external_run(source)
-      println((System.currentTimeMillis() - i) / 1000.0 + " <-\n")
    }
 
    //   def executa_shell(code: String) = {

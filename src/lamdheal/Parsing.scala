@@ -111,37 +111,37 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
    def parse_string(s: String) = {
       ListE(s.toArray map CharE)
       //      println(">" + s + "<")
-//      val slices = s.split('\'')
-//      if (slices.length < 2) {
-//         val l = slices.length match {
-//            case 0 => ListE(Array())
-//            case 1 => ListE(s.toArray map CharE)
-//         }
-//         //         exprs.t = HindleyDamasMilner.CharT
-//         //         l.t = ListT(CharT)
-//         l
-//      } else {
-//         if (slices.length % 2 == 0) failure("Unmatched ' inside string '" + s + "'.")
-//         val list_of_strings = slices.zipWithIndex map {
-//            case (sl, i) =>
-//               if (i % 2 == 0) {
-//                  val str = ListE(sl.toArray map CharE)
-//                  //                  str.t = ListT(CharT)
-//                  str
-//               }
-//               else {
-//                  //                  val ev = Eval
-//                  //                  ev.t = FunctionT(ListT(CharacterT), ListT(CharacterT))
-//                  //                  val str = ListExpr(("<< (" + sl + ")").toCharArray map CharacterExpr)
-//                  //                  str.t = ListT(CharacterT)
-//                  //                  ApplyE(ev, str)
-//                  EmptyE
-//               }
-//         }
-//         val l = list_of_strings.flatten //reduce (ConcatenateListExpr)
-//         //         l.t = ListT(CharacterT)
-//         l
-//      }
+      //      val slices = s.split('\'')
+      //      if (slices.length < 2) {
+      //         val l = slices.length match {
+      //            case 0 => ListE(Array())
+      //            case 1 => ListE(s.toArray map CharE)
+      //         }
+      //         //         exprs.t = HindleyDamasMilner.CharT
+      //         //         l.t = ListT(CharT)
+      //         l
+      //      } else {
+      //         if (slices.length % 2 == 0) failure("Unmatched ' inside string '" + s + "'.")
+      //         val list_of_strings = slices.zipWithIndex map {
+      //            case (sl, i) =>
+      //               if (i % 2 == 0) {
+      //                  val str = ListE(sl.toArray map CharE)
+      //                  //                  str.t = ListT(CharT)
+      //                  str
+      //               }
+      //               else {
+      //                  //                  val ev = Eval
+      //                  //                  ev.t = FunctionT(ListT(CharacterT), ListT(CharacterT))
+      //                  //                  val str = ListExpr(("<< (" + sl + ")").toCharArray map CharacterExpr)
+      //                  //                  str.t = ListT(CharacterT)
+      //                  //                  ApplyE(ev, str)
+      //                  EmptyE
+      //               }
+      //         }
+      //         val l = list_of_strings.flatten //reduce (ConcatenateListExpr)
+      //         //         l.t = ListT(CharacterT)
+      //         l
+      //      }
    }
 
    def transform(s: String) = s.replace("\\n", "\n").replace("\\”", "”").replace("\\\"", "\"")
@@ -149,17 +149,17 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
    def atomic_expr: Parser[Expr] = {
       (
          "<<" ^^^ IdentE("<<")
-            | "(*)" ^^^ IdentE("(*)") | "(/)" ^^^ IdentE("(/)") | "(\\)" ^^^ IdentE("(\\)")
-            | "(+)" ^^^ IdentE("(+)") | "(-)" ^^^ IdentE("(-)") | "(%)" ^^^ IdentE("(%)")
-            | "(>)" ^^^ IdentE("(>)") | "(^)" ^^^ IdentE("(^)") | "(>=)" ^^^ IdentE("(>=)")
-            | "(<)" ^^^ IdentE("(<)") | "(<=)" ^^^ IdentE("(<=)") | "(==)" ^^^ IdentE("(==)")
-            | "(!=)" ^^^ IdentE("(!=)")
-            | identifier ^^ {x => IdentE(x)}
+            | "(*)" ^^ IdentE | "(/)" ^^ IdentE | "(\\)" ^^ IdentE
+            | "(+)" ^^ IdentE | "(-)" ^^ IdentE | "(%)" ^^ IdentE
+            | "(>)" ^^ IdentE | "(^)" ^^ IdentE | "(>=)" ^^ IdentE
+            | "(<)" ^^ IdentE | "(<=)" ^^ IdentE | "(==)" ^^ IdentE
+            | "(!=)" ^^ IdentE
+            | identifier ^^ IdentE
             | scala_code
             | "(" ~> block <~ ")"
             //            | "[" ~> (sum(h) <~ "..") ~! sum(h) <~ "]" ^^ ListInterval
             | list
-            | """-?(\d+(\.\d+)?)""".r ^^ {x => NumberE(x)}
+            | """-?(\d+(\.\d+)?)""".r ^^ NumberE
             | ("\"" | "“") ~> simple_string <~ ("\"" | "”") ^^ {case s => parse_string(transform(s))}
             //            | not_parseable_string
             //            | boolean
@@ -167,7 +167,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
             //            | shell(h)
             //            | arg
             //            | empty
-            | "`" ^^^ IdentE("`") | "`+" ^^^ IdentE("`+")
+            | "`]+" ^^ IdentE | "`]" ^^ IdentE | "`+" ^^ IdentE | "`" ^^ IdentE
             //            | "@" ^^^ Takehead | "~" ^^^ Taketail | "!" ^^^ Reverse
             //            | ("\'" | "‘") ~> simple_character <~ ("\'" | "’") ^^ {x => CharacterExpr(transform(x).head)}
             //            | ("'" ~> declared_type <~ "'") ~ (("""\*/""".r ~> """((?!/\*).)+""".r) <~ """/\*""".r) ^^ {case t ~ str => val sc = Scalacode(str); sc.t = t; sc}
@@ -183,7 +183,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
    //         ApplyE(e, a)
    //   } | application(h)
 
-   def scala_code = type_declaration ~ ("""\*/(?:.|[\n\r])+?/\*""".r) ^^ {
+   def scala_code = type_declaration ~ """\*/(?:.|[\n\r])+?/\*""".r ^^ {
       case dec_type ~ code =>
          ApplyE(TypeE(dec_type), ListE(code.toArray.drop(2).dropRight(2) map CharE))
    }

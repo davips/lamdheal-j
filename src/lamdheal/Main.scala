@@ -21,11 +21,14 @@ import io.Source
 object Main extends App {
    Console.setOut(new java.io.PrintStream(Console.out, true, "utf-8"))
    if (args.length != 1) {
+      val i = System.currentTimeMillis()
       println("Usage:\njava -jar lamdheal.jar input-file.lhe")
       val source_code = Source.fromFile("example.lhe").getLines().mkString("\n")
       val ast = Parsing.parse(source_code)
+//      println(ast)
       if (HindleyMilner.verify(ast)) //AST is changed after type inference.
-         Compiling.compile(ast)
+         Compiling.compile_and_run(ast)
+      println((System.currentTimeMillis() - i) / 1000.0 + " <- time spent to parse, type inference/check, compile and run\n")
    } else {
       val source_code = Source.fromFile(args(0)).getLines().mkString("\n")
    }

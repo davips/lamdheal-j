@@ -25,13 +25,14 @@ object ScalaCompiler {
       fw.close()
       import sys.process.Process
       val gera = Process("scala output.scala")
-      try {
-         gera.!!
-      } catch {
-         case _: Throwable => println(s)
-      } finally {
-         gera.lines map println
-      }
+//      try {
+//         gera.!!
+//      } catch {
+//         case _: Throwable => println(s)
+//      } finally {
+//         gera.lines map println
+//      }
+      gera.!
    }
 
    def compile(str: String) {
