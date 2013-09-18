@@ -101,10 +101,11 @@ object TypeSystem {
       "(<)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
 
       "<<" -> FunctionT(AnyT, ListT(CharT)), //show
-      "`" -> FunctionT(AnyT, EmptyT), //println
-      "`+" -> FunctionT(AnyT, EmptyT), //print
-      "`]" -> FunctionT(ListT(CharT), EmptyT), //println '[cha]' as list
-      "`]+" -> FunctionT(ListT(CharT), EmptyT) //print '[cha]' as list
+      BuiltinId.println -> FunctionT(AnyT, EmptyT), //println
+      BuiltinId.print -> FunctionT(AnyT, EmptyT), //print
+      "(++)" -> FunctionT(ListT(AnyT), FunctionT(ListT(AnyT), ListT(AnyT))), //TODO:disallow concatenation of different list types
+      BuiltinId.printlnastext -> FunctionT(ListT(CharT), EmptyT), //println '[cha]' as text
+      BuiltinId.printastext -> FunctionT(ListT(CharT), EmptyT) //print '[cha]' as text
    )
 
    class Context(var env: Map[String, Type]) {

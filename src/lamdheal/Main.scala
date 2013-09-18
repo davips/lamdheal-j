@@ -27,7 +27,7 @@ object Main extends App {
       try {
          val ast = Parsing.parse(source_code)
          if (HindleyMilner.verify(ast)) //AST is changed after type inference.
-            Compiling.compile_and_run(ast)
+            CompilingToYeti.compile_and_run(ast)
       } catch {
          case e: Throwable => println(e)
       }

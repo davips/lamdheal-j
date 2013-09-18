@@ -2,7 +2,7 @@
  * Not to use directly.
  * This is for runtime only.
  */
-object Runtime {
+object Runtime extends App {
 
    import scala.reflect.runtime.universe._
    class L[A: TypeTag](val l: List[A]) {

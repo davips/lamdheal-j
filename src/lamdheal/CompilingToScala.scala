@@ -20,12 +20,12 @@ import scala.io.Source
     You should have received a copy of the GNU General Public License
     along with Lamdheal.  If not, see <http://www.gnu.org/licenses/>.*/
 
-object Compiling {
+object CompilingToScala {
    var with_runtime = false
 
    def scalaType(typ: Type): String = typ match {
       case FunctionT(from, to) => "((" + scalaType(from) + ") => " + scalaType(to) + ")"
-      case ListT(eT) => "Runtime.L" + "[" + scalaType(eT) + "]"
+      case ListT(eT) => "L" + "[" + scalaType(eT) + "]"
       case NumberT => "Double"
       case BooleanT => "Boolean"
       case CharT => "Char"
@@ -45,8 +45,8 @@ object Compiling {
          case IdentE(id) => id match {
             case "`" => "println"
             case "`+" => "print"
-            case "`]" => "Runtime.prtln_as_list"
-            case "`]+" => "Runtime.prt_as_list"
+            case "`]" => "prtln_as_list"
+            case "`]+" => "prt_as_list"
             case "(*)" => "((x:Double) => (y:Double) => x*y)"
             case "(/)" => "((x:Double) => (y:Double) => x/y)"
             case "(\\)" => "((x:Double) => (y:Double) => math.round(x/y))"
@@ -66,14 +66,17 @@ object Compiling {
             val eT = liste.t.asInstanceOf[ListT].elem_type
             " new " + scalaType(liste.t) + "(List(" + l.map(run).mkString(",") + "))"
          case NumberE(n) => n
-         case TypeE(t) => {with_runtime = true; "Runtime.interpret(\"" + t + "\")"}
+         case TypeE(t) => {with_runtime = true; "interpret(\"" + t + "\")"}
       }
    }
 
    def compile_and_run(expr: Expr) {
-      val source = Source.fromFile("Runtime.scala").mkString + "\n" + run(expr) + "\n"
+      val source = Source.fromFile("Runtime.scala").toList.dropRight(1).mkString + "\n" +
+         run(expr) + "\n" +
+         "}\n//Runtime.main(Array())"
+//         "//AntiBug.main(Array())"
       //      println(source)
-      //      ScalaCompiler.compile(source)
+//            ScalaCompiler.interpret(source)
       ScalaCompiler.external_run(source)
    }
 

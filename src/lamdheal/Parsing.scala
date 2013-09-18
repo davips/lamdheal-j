@@ -70,7 +70,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
          }
    }
 
-   def sum = product ~ rep(not("`") ~> "+" ~ product | "-" ~ product) ^^ {
+   def sum = product ~ rep(not("`") ~> "+" ~ product | "++" ~ product | "-" ~ product) ^^ {
       case number ~ list =>
          (number /: list) {
             case (acc, op ~ nextNum) => ApplyE(ApplyE(IdentE("(" + op + ")"), acc), nextNum)
@@ -153,7 +153,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
             | "(+)" ^^ IdentE | "(-)" ^^ IdentE | "(%)" ^^ IdentE
             | "(>)" ^^ IdentE | "(^)" ^^ IdentE | "(>=)" ^^ IdentE
             | "(<)" ^^ IdentE | "(<=)" ^^ IdentE | "(==)" ^^ IdentE
-            | "(!=)" ^^ IdentE
+            | "(!=)" ^^ IdentE | "(++)" ^^ IdentE
             | identifier ^^ IdentE
             | scala_code
             | "(" ~> block <~ ")"
@@ -167,9 +167,10 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
             //            | shell(h)
             //            | arg
             //            | empty
-            | "`]+" ^^ IdentE | "`]" ^^ IdentE | "`+" ^^ IdentE | "`" ^^ IdentE
+            | BuiltinId.printastext ^^ IdentE | BuiltinId.print ^^ IdentE //mind the precedence!
+            | BuiltinId.printlnastext ^^ IdentE | BuiltinId.println ^^ IdentE //mind the precedence!
             //            | "@" ^^^ Takehead | "~" ^^^ Taketail | "!" ^^^ Reverse
-                        | ("\'" | "‘") ~> simple_character <~ ("\'" | "’") ^^ {x => CharE(transform(x).head)}
+            | ("\'" | "‘") ~> simple_character <~ ("\'" | "’") ^^ {x => CharE(transform(x).head)}
             //            | ("'" ~> declared_type <~ "'") ~ (("""\*/""".r ~> """((?!/\*).)+""".r) <~ """/\*""".r) ^^ {case t ~ str => val sc = Scalacode(str); sc.t = t; sc}
             //            | "'" ~> declared_type <~ "'" ^^ {case t => val e = Eval; e.t = FunctionT(ListT(CharacterT), t); e}
             | ("" ~! "") ~> failure("expression expected...")
@@ -206,9 +207,10 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
          list.t = ListT(type_expr)
          list
    } | "[" ~! "]" ~> failure("Empty lists must have an explicitly defined type.\n" +
-         "Examples of valid code: \"exprs = ['boo']\", \"exprs = ['cha']\" or " +
-         "\"exprs = ['[cha]']\".\nNote that a list filled with empty lists is not empty.")
-//      EmptyE //Just to satisfy Parser sexual typing needs.
+      "Examples of valid code: \"exprs = ['boo']\", \"exprs = ['cha']\" or " +
+      "\"exprs = ['[cha]']\".\nNote that a list filled with empty lists is not empty.")
+
+   //      EmptyE //Just to satisfy Parser sexual typing needs.
 
 
    def n_list = "[" ~> rep1sep(expr, ",") <~ "]" ^^ {

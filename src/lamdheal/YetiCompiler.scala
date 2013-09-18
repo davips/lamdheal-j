@@ -1,6 +1,5 @@
 package lamdheal
 
-
 /*  Copyright 2013 Davi Pereira dos Santos
     This file is part of Lamdheal.
 
@@ -17,20 +16,15 @@ package lamdheal
     You should have received a copy of the GNU General Public License
     along with Lamdheal.  If not, see <http://www.gnu.org/licenses/>.*/
 
-object ScalaCompiler {
+object YetiCompiler {
    def external_run(s: String) {
       import java.io.FileWriter
-      val fw = new FileWriter("output.scala")
+      val fw = new FileWriter("output.yeti")
       fw.write(s)
       fw.close()
       import sys.process.Process
-            val gera = Process("scala output.scala")
-//      val gera = Process("scalac output.scala")
+      val gera = Process("yeti output.yeti")
       gera.!
-//      val gera3 = Process("ls")
-//      gera3.!
-//      val gera2 = Process("scala Runtime")
-//      gera2.!
    }
 
    def compile(str: String) {
