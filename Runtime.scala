@@ -4,13 +4,15 @@
  */
 object Runtime {
 
-   class L[A](val l: List[A], typ: String) {
-      override def toString = typ match {
-         case "cha" => l.mkString
+   import scala.reflect.runtime.universe._
+   class L[A: TypeTag](val l: List[A]) {
+      override def toString = typeOf[A] match {
+         case t if t =:= typeOf[Char] => l.mkString
+//         case t if t =:= typeOf[List] => l.mkString
          case _ => "[" + l.mkString(", ") + "]"
       }
 
-      def apply[U](f: (A) => U) = { l map f }
+      def apply[U: TypeTag](f: (A) => U) = { new L[U](l map f) }
    }
 
    def interpret(typ: String)(lst: List[Char]) = {

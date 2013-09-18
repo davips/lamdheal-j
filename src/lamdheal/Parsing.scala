@@ -169,7 +169,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
             //            | empty
             | "`]+" ^^ IdentE | "`]" ^^ IdentE | "`+" ^^ IdentE | "`" ^^ IdentE
             //            | "@" ^^^ Takehead | "~" ^^^ Taketail | "!" ^^^ Reverse
-            //            | ("\'" | "‘") ~> simple_character <~ ("\'" | "’") ^^ {x => CharacterExpr(transform(x).head)}
+                        | ("\'" | "‘") ~> simple_character <~ ("\'" | "’") ^^ {x => CharE(transform(x).head)}
             //            | ("'" ~> declared_type <~ "'") ~ (("""\*/""".r ~> """((?!/\*).)+""".r) <~ """/\*""".r) ^^ {case t ~ str => val sc = Scalacode(str); sc.t = t; sc}
             //            | "'" ~> declared_type <~ "'" ^^ {case t => val e = Eval; e.t = FunctionT(ListT(CharacterT), t); e}
             | ("" ~! "") ~> failure("expression expected...")
@@ -205,12 +205,11 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
          val list = ListE(Array[Expr]())
          list.t = ListT(type_expr)
          list
-   } | "[" ~! "]" ^^^ {
-      failure("EmptyExpr lists must have an explicitly defined type." +
-         "Examples of valid code: \"exprs = ['boo']\", \"exprs = ['num']\" or " +
-         "\"exprs = ['cha']\".\nNote that a list filled with empty lists is not empty.")
-      EmptyE //Just to satisfy Parser sexual typing needs.
-   }
+   } | "[" ~! "]" ~> failure("Empty lists must have an explicitly defined type.\n" +
+         "Examples of valid code: \"exprs = ['boo']\", \"exprs = ['cha']\" or " +
+         "\"exprs = ['[cha]']\".\nNote that a list filled with empty lists is not empty.")
+//      EmptyE //Just to satisfy Parser sexual typing needs.
+
 
    def n_list = "[" ~> rep1sep(expr, ",") <~ "]" ^^ {
       exs => ListE(exs.toArray)

@@ -25,7 +25,7 @@ object Compiling {
 
    def scalaType(typ: Type): String = typ match {
       case FunctionT(from, to) => "((" + scalaType(from) + ") => " + scalaType(to) + ")"
-      case ListT(eT) => "Runtime.L"
+      case ListT(eT) => "Runtime.L" + "[" + scalaType(eT) + "]"
       case NumberT => "Double"
       case BooleanT => "Boolean"
       case CharT => "Char"
@@ -64,7 +64,7 @@ object Compiling {
          case lambda@LambdaE(arg, body) => "(" + arg + ":" + scalaType(lambda.t.asInstanceOf[FunctionT].from) + ") => {" + run(body) + "}"
          case liste@ListE(l) =>
             val eT = liste.t.asInstanceOf[ListT].elem_type
-            " new " + scalaType(liste.t) + "[" + scalaType(eT) + "](List(" + l.map(run).mkString(",") + "),\"" + eT + "\")"
+            " new " + scalaType(liste.t) + "(List(" + l.map(run).mkString(",") + "))"
          case NumberE(n) => n
          case TypeE(t) => {with_runtime = true; "Runtime.interpret(\"" + t + "\")"}
       }
@@ -72,7 +72,7 @@ object Compiling {
 
    def compile_and_run(expr: Expr) {
       val source = Source.fromFile("Runtime.scala").mkString + "\n" + run(expr) + "\n"
-//      println(source)
+      //      println(source)
       //      ScalaCompiler.compile(source)
       ScalaCompiler.external_run(source)
    }

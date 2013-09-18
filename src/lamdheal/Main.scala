@@ -24,10 +24,14 @@ object Main extends App {
       val i = System.currentTimeMillis()
       println("Usage:\njava -jar lamdheal.jar input-file.lhe")
       val source_code = Source.fromFile("example.lhe").getLines().mkString("\n")
-      val ast = Parsing.parse(source_code)
-//      println(ast)
-      if (HindleyMilner.verify(ast)) //AST is changed after type inference.
-         Compiling.compile_and_run(ast)
+      try {
+         val ast = Parsing.parse(source_code)
+         if (HindleyMilner.verify(ast)) //AST is changed after type inference.
+            Compiling.compile_and_run(ast)
+      } catch {
+         case e: Throwable => println(e)
+      }
+      //      println(ast)
       println((System.currentTimeMillis() - i) / 1000.0 + " <- time spent to parse, type inference/check, compile and run\n")
    } else {
       val source_code = Source.fromFile(args(0)).getLines().mkString("\n")
