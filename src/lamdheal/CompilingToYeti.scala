@@ -44,6 +44,7 @@ object CompilingToYeti {
             case "!" => "reverse"
             case "@" => "head"
             case "~" => "tail"
+            case ".." => "do x y: [x .. y] done"
             case BuiltinId.println => "println"
             case BuiltinId.print => "print"
             case BuiltinId.printastext => "(print . fold (^) \"\")"

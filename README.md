@@ -28,6 +28,7 @@ Please make the proper reference to the licenses.
 
 TODO
 ====
+ * finish all needed to run benchmark (e.g. mutable vars)
  * get line numbers from scala parser combinators to feed yeti compiler
  * replace command line yeti compilation by a call to yeti compiler classes
  * implement tuples

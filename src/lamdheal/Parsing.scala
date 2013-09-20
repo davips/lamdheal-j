@@ -156,7 +156,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
             | "(!=)" ^^ IdentE | "(++)" ^^ IdentE
             | identifier ^^ IdentE
             | "(" ~> block <~ ")"
-            //            | "[" ~> (sum(h) <~ "..") ~! sum(h) <~ "]" ^^ ListInterval
+            | ("[" ~> sum <~ "..") ~! sum <~ "]" ^^ {case a ~ b => ApplyE(ApplyE(IdentE(".."), a), b)}
             | list
             | """-?(\d+(\.\d+)?)""".r ^^ NumberE
             | ("\"" | "“") ~> simple_string <~ ("\"" | "”") ^^ {case s => parse_string(transform(s))}

@@ -110,7 +110,8 @@ object TypeSystem {
 
       "@" -> FunctionT(ListT(AnyT), AnyT),
       "~" -> FunctionT(ListT(AnyT), ListT(AnyT)),
-      "!" -> FunctionT(ListT(AnyT), ListT(AnyT))
+      "!" -> FunctionT(ListT(AnyT), ListT(AnyT)),
+      ".." -> FunctionT(NumberT, FunctionT(NumberT, ListT(NumberT)))
    )
 
    class Context(var env: Map[String, Type]) {
