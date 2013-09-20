@@ -28,10 +28,11 @@ object Main extends App {
          val ast = Parsing.parse(source_code)
          if (HindleyMilner.verify(ast)) //AST is changed after type inference.
             CompilingToYeti.compile_and_run(ast)
+         else
+            println(ast)
       } catch {
          case e: Throwable => println(e)
       }
-      //      println(ast)
       println((System.currentTimeMillis() - i) / 1000.0 + " <- time spent to parse, type inference/check, compile and run\n")
    } else {
       val source_code = Source.fromFile(args(0)).getLines().mkString("\n")
