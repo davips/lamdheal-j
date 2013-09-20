@@ -59,7 +59,8 @@ object CompilingToYeti {
    }
 
    def compile_and_run(expr: Expr) {
-      val source = "program output;\n" + run(expr) + "print \"\""
+      val source = "program output;\n" +
+         "print " + run(expr) + " "
       YetiCompiler.external_run(source)
    }
 }

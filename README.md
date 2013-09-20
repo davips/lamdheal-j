@@ -25,3 +25,15 @@ You can do whatever you want with your own applications written in lamdheal. Ple
 Additionally, applications with embedded Java will depend on Janino library.
 Please make the proper reference to the licenses.
 
+
+TODO
+====
+ * get line numbers from scala parser combinators to feed yeti compiler
+ * replace command line yeti compilation by a call to yeti compiler classes
+ * implement tuples
+ * provide zip of lists (& operator)
+ * implement type variable (like 'a', 'b' etc.) to disallow comparison ('==', '>=') of different types, avoid concatenation of different list types etc.
+ * implement embedded java code support with janino (parameters are marked with '$')
+   return type should be given to be tested by a java routine in runtime
+   Syntax: '[num]' "List list = new ArrayList(); for (int i=0; i<$n; i++) list.add(i); return list;"
+ * implement fast repeatable embedded java code support with janino; user can define a function that wil be called multiple times with varying arguments

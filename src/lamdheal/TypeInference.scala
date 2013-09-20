@@ -92,7 +92,8 @@ object TypeSystem {
       "(%)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
       "(^)" -> FunctionT(NumberT, FunctionT(NumberT, NumberT)),
 
-      "(==)" -> FunctionT(AnyT, FunctionT(AnyT, BooleanT)), //TODO:disallow comparison of different types
+//TODO:implement type variable (like 'a', 'b' etc.) to disallow comparison ('==', '>=') of different types, avoid concatenation of different list types etc.
+      "(==)" -> FunctionT(AnyT, FunctionT(AnyT, BooleanT)), 
       "(!=)" -> FunctionT(AnyT, FunctionT(AnyT, BooleanT)),
 
       "(>=)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
@@ -103,7 +104,7 @@ object TypeSystem {
       "<<" -> FunctionT(AnyT, ListT(CharT)), //show
       BuiltinId.println -> FunctionT(ListT(CharT), EmptyT), //println
       BuiltinId.print -> FunctionT(ListT(CharT), EmptyT), //print
-      "(++)" -> FunctionT(ListT(AnyT), FunctionT(ListT(AnyT), ListT(AnyT))), //TODO:disallow concatenation of different list types
+      "(++)" -> FunctionT(ListT(AnyT), FunctionT(ListT(AnyT), ListT(AnyT))),
       BuiltinId.printlnastext -> FunctionT(AnyT, EmptyT), //println '[cha]' as text
       BuiltinId.printastext -> FunctionT(AnyT, EmptyT), //print '[cha]' as text
 
@@ -122,7 +123,7 @@ object TypeSystem {
             analyse(expr, nongen)
          case ap@ApplyE(fn, arg) =>
             val funtype = analyse(fn, nongen)
-            if (funtype.toString.startsWith("[")) { //TODO: find better way to identify a list
+            if (funtype.getClass == classOf[ListT]) {
                val argtype = analyse(arg, nongen)
                val resulttype = newVariable
                val fmaptype = FunctionT(funtype.asInstanceOf[ListT].elem_type, resulttype)
