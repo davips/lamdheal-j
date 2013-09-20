@@ -155,13 +155,12 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
             | "(<)" ^^ IdentE | "(<=)" ^^ IdentE | "(==)" ^^ IdentE
             | "(!=)" ^^ IdentE | "(++)" ^^ IdentE
             | identifier ^^ IdentE
-            | scala_code
             | "(" ~> block <~ ")"
             //            | "[" ~> (sum(h) <~ "..") ~! sum(h) <~ "]" ^^ ListInterval
             | list
             | """-?(\d+(\.\d+)?)""".r ^^ NumberE
             | ("\"" | "“") ~> simple_string <~ ("\"" | "”") ^^ {case s => parse_string(transform(s))}
-            //            | not_parseable_string
+            | multiline_string ^^ {case s => parse_string(s)}
             //            | boolean
             //            | inversor
             //            | shell(h)
@@ -169,7 +168,8 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
             //            | empty
             | BuiltinId.printastext ^^ IdentE | BuiltinId.print ^^ IdentE //mind the precedence!
             | BuiltinId.printlnastext ^^ IdentE | BuiltinId.println ^^ IdentE //mind the precedence!
-            //            | "@" ^^^ Takehead | "~" ^^^ Taketail | "!" ^^^ Reverse
+            | type_declaration ^^ TypeE
+            | "@" ^^ IdentE | "~" ^^ IdentE | "!" ^^ IdentE
             | ("\'" | "‘") ~> simple_character <~ ("\'" | "’") ^^ {x => CharE(transform(x).head)}
             //            | ("'" ~> declared_type <~ "'") ~ (("""\*/""".r ~> """((?!/\*).)+""".r) <~ """/\*""".r) ^^ {case t ~ str => val sc = Scalacode(str); sc.t = t; sc}
             //            | "'" ~> declared_type <~ "'" ^^ {case t => val e = Eval; e.t = FunctionT(ListT(CharacterT), t); e}
@@ -177,17 +177,7 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
          )
    }
 
-   //   def run(h: Has_) = ("'" ~> declared_type <~ "'") ~ application(h) ^^ {
-   //      case t ~ a =>
-   //         val e = Eval
-   //         e.t = FunctionT(ListT(CharacterT), t)
-   //         ApplyE(e, a)
-   //   } | application(h)
-
-   def scala_code = type_declaration ~ """\*/(?:.|[\n\r])+?/\*""".r ^^ {
-      case dec_type ~ code =>
-         ApplyE(TypeE(dec_type), ListE(code.toArray.drop(2).dropRight(2) map CharE))
-   }
+   def multiline_string = """\*/(?:.|[\n\r])+?/\*""".r
 
    def type_declaration = "'" ~> explicit_type <~ "'"
 
@@ -201,14 +191,14 @@ object Parsing extends RegexParsers with ImplicitConversions with JavaTokenParse
 
    def list = n_list | empty_list
 
-   def empty_list = "[" ~> type_declaration <~ "]" ^^ {
+   def empty_list = type_declaration <~ "[]" ^^ {
       type_expr =>
          val list = ListE(Array[Expr]())
          list.t = ListT(type_expr)
          list
    } | "[" ~! "]" ~> failure("Empty lists must have an explicitly defined type.\n" +
-      "Examples of valid code: \"exprs = ['boo']\", \"exprs = ['cha']\" or " +
-      "\"exprs = ['[cha]']\".\nNote that a list filled with empty lists is not empty.")
+      "Examples of valid code: \"exprs = 'boo'[]\", \"exprs = 'cha'[]\" or " +
+      "\"exprs = '[cha]'[]\".\nNote that a list filled with empty lists is not empty.")
 
    //      EmptyE //Just to satisfy Parser sexual typing needs.
 

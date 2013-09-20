@@ -33,14 +33,17 @@ object CompilingToYeti {
 
    def run(ex: Expr): String = {
       ex match {
-         case ApplyE(f, a) => if (f.t != null && f.t.getClass == classOf[ListT]) "map " + run(a) + " " + run(f) + "" else run(f) + " " + run(a) + ""
+         case ApplyE(f, a) => if (f.t != null && f.t.getClass == classOf[ListT]) "( map " + run(a) + " " + run(f) + ")" else "(" + run(f) + " " + run(a) + ")"
          //         case ApplyE(f, a) => run(f) + "(" + run(a) + ")"
-         case AssignE(id, e) => "" + id + "=" + run(e)
-         case BlockE(l) => "(\n" + l.filterNot(EmptyE ==).map(x => "   " + run(x)).mkString(";\n") + "\n)\n"
+         case AssignE(id, e) => "" + id + "=" + run(e) + ""
+         case BlockE(l) => "(\n" + l.filterNot(EmptyE ==).map(x => "   " + run(x)).mkString(";\n") + ";\n)\n"
          case BooleanE(b) => b
          case CharE(c) => "'" + c + "'"
          case EmptyE => "()"
          case IdentE(id) => id match {
+            case "!" => "reverse"
+            case "@" => "head"
+            case "~" => "tail"
             case BuiltinId.println => "println"
             case BuiltinId.print => "print"
             case BuiltinId.printastext => "(print . fold (^) \"\")"
@@ -51,12 +54,12 @@ object CompilingToYeti {
          case lambda@LambdaE(arg, body) => "do " + arg + ":" + " " + run(body) + " done"
          case liste@ListE(l) => "[" + l.map(run).mkString(",") + "]"
          case NumberE(n) => n
-         case TypeE(t) => "interpret(\"" + t + "\")"
+         case TypeE(t) => throw new Exception("run_java not implemented yet!") //\"" + t + "\""
       }
    }
 
    def compile_and_run(expr: Expr) {
-      val source = run(expr)
+      val source = "program output;\n" + run(expr) + "print \"\""
       YetiCompiler.external_run(source)
    }
 }

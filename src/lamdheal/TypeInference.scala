@@ -101,11 +101,15 @@ object TypeSystem {
       "(<)" -> FunctionT(NumberT, FunctionT(NumberT, BooleanT)),
 
       "<<" -> FunctionT(AnyT, ListT(CharT)), //show
-      BuiltinId.println -> FunctionT(AnyT, EmptyT), //println
-      BuiltinId.print -> FunctionT(AnyT, EmptyT), //print
+      BuiltinId.println -> FunctionT(ListT(CharT), EmptyT), //println
+      BuiltinId.print -> FunctionT(ListT(CharT), EmptyT), //print
       "(++)" -> FunctionT(ListT(AnyT), FunctionT(ListT(AnyT), ListT(AnyT))), //TODO:disallow concatenation of different list types
-      BuiltinId.printlnastext -> FunctionT(ListT(CharT), EmptyT), //println '[cha]' as text
-      BuiltinId.printastext -> FunctionT(ListT(CharT), EmptyT) //print '[cha]' as text
+      BuiltinId.printlnastext -> FunctionT(AnyT, EmptyT), //println '[cha]' as text
+      BuiltinId.printastext -> FunctionT(AnyT, EmptyT), //print '[cha]' as text
+
+      "@" -> FunctionT(ListT(AnyT), AnyT),
+      "~" -> FunctionT(ListT(AnyT), ListT(AnyT)),
+      "!" -> FunctionT(ListT(AnyT), ListT(AnyT))
    )
 
    class Context(var env: Map[String, Type]) {
@@ -118,7 +122,7 @@ object TypeSystem {
             analyse(expr, nongen)
          case ap@ApplyE(fn, arg) =>
             val funtype = analyse(fn, nongen)
-            if (funtype.toString.startsWith("[")) {
+            if (funtype.toString.startsWith("[")) { //TODO: find better way to identify a list
                val argtype = analyse(arg, nongen)
                val resulttype = newVariable
                val fmaptype = FunctionT(funtype.asInstanceOf[ListT].elem_type, resulttype)
