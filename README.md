@@ -1,5 +1,8 @@
 lamdheal
 ==========
+
+[Put aside in favour of Tupi, which is still in its infancy]
+
 Lamdheal language runner and compiler for JVM.
 
 Intro
